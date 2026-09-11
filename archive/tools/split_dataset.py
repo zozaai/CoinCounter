@@ -19,8 +19,18 @@ from collections import defaultdict
 SPLITS = ("train", "val", "test")
 
 
+def repo_root():
+    """Walk up from this file until a directory containing `dataset` is found."""
+    d = os.path.dirname(os.path.abspath(__file__))
+    while d != os.path.dirname(d):
+        if os.path.isdir(os.path.join(d, "dataset")):
+            return d
+        d = os.path.dirname(d)
+    return os.getcwd()
+
+
 def main():
-    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    here = repo_root()
     root = os.path.join(here, "dataset")
     ap = argparse.ArgumentParser()
     ap.add_argument("--images", default=os.path.join(root, "images"))
