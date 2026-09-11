@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 230" width="720" height="230" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" role="img" aria-label="Images per coin count, 1 to 12 coins">
+<line x1="34" y1="196.0" x2="706" y2="196.0" stroke="#d8d7d2" stroke-width="1"/>
+<text x="26" y="200.0" text-anchor="end" font-size="11" fill="#52514e">0</text>
+<line x1="34" y1="151.3" x2="706" y2="151.3" stroke="#d8d7d2" stroke-width="1"/>
+<text x="26" y="155.3" text-anchor="end" font-size="11" fill="#52514e">5</text>
+<line x1="34" y1="106.5" x2="706" y2="106.5" stroke="#d8d7d2" stroke-width="1"/>
+<text x="26" y="110.5" text-anchor="end" font-size="11" fill="#52514e">10</text>
+<line x1="34" y1="61.8" x2="706" y2="61.8" stroke="#d8d7d2" stroke-width="1"/>
+<text x="26" y="65.8" text-anchor="end" font-size="11" fill="#52514e">15</text>
+<path d="M39.0,196 V128.4 a4.0,4.0 0 0 1 4.0,-4.0 H81.0 a4.0,4.0 0 0 1 4.0,4.0 V196 Z" fill="#2a78d6"/>
+<text x="62.0" y="117.4" text-anchor="middle" font-size="11" fill="#0b0b0b">8</text>
+<text x="62.0" y="213.0" text-anchor="middle" font-size="11" fill="#52514e">1</text>
+<path d="M95.0,196 V128.4 a4.0,4.0 0 0 1 4.0,-4.0 H137.0 a4.0,4.0 0 0 1 4.0,4.0 V196 Z" fill="#2a78d6"/>
+<text x="118.0" y="117.4" text-anchor="middle" font-size="11" fill="#0b0b0b">8</text>
+<text x="118.0" y="213.0" text-anchor="middle" font-size="11" fill="#52514e">2</text>
+<path d="M151.0,196 V101.6 a4.0,4.0 0 0 1 4.0,-4.0 H193.0 a4.0,4.0 0 0 1 4.0,4.0 V196 Z" fill="#2a78d6"/>
+<text x="174.0" y="90.6" text-anchor="middle" font-size="11" fill="#0b0b0b">11</text>
+<text x="174.0" y="213.0" text-anchor="middle" font-size="11" fill="#52514e">3</text>
+<path d="M207.0,196 V92.6 a4.0,4.0 0 0 1 4.0,-4.0 H249.0 a4.0,4.0 0 0 1 4.0,4.0 V196 Z" fill="#2a78d6"/>
+<text x="230.0" y="81.6" text-anchor="middle" font-size="11" fill="#0b0b0b">12</text>
+<text x="230.0" y="213.0" text-anchor="middle" font-size="11" fill="#52514e">4</text>
+<path d="M263.0,196 V83.7 a4.0,4.0 0 0 1 4.0,-4.0 H305.0 a4.0,4.0 0 0 1 4.0,4.0 V196 Z" fill="#2a78d6"/>
+<text x="286.0" y="72.7" text-anchor="middle" font-size="11" fill="#0b0b0b">13</text>
+<text x="286.0" y="213.0" text-anchor="middle" font-size="11" fill="#52514e">5</text>
+<path d="M319.0,196 V101.6 a4.0,4.0 0 0 1 4.0,-4.0 H361.0 a4.0,4.0 0 0 1 4.0,4.0 V196 Z" fill="#2a78d6"/>
+<text x="342.0" y="90.6" text-anchor="middle" font-size="11" fill="#0b0b0b">11</text>
+<text x="342.0" y="213.0" text-anchor="middle" font-size="11" fill="#52514e">6</text>
+<path d="M375.0,196 V110.5 a4.0,4.0 0 0 1 4.0,-4.0 H417.0 a4.0,4.0 0 0 1 4.0,4.0 V196 Z" fill="#2a78d6"/>
+<text x="398.0" y="99.5" text-anchor="middle" font-size="11" fill="#0b0b0b">10</text>
+<text x="398.0" y="213.0" text-anchor="middle" font-size="11" fill="#52514e">7</text>
+<path d="M431.0,196 V128.4 a4.0,4.0 0 0 1 4.0,-4.0 H473.0 a4.0,4.0 0 0 1 4.0,4.0 V196 Z" fill="#2a78d6"/>
+<text x="454.0" y="117.4" text-anchor="middle" font-size="11" fill="#0b0b0b">8</text>
+<text x="454.0" y="213.0" text-anchor="middle" font-size="11" fill="#52514e">8</text>
+<path d="M487.0,196 V137.4 a4.0,4.0 0 0 1 4.0,-4.0 H529.0 a4.0,4.0 0 0 1 4.0,4.0 V196 Z" fill="#2a78d6"/>
+<text x="510.0" y="126.4" text-anchor="middle" font-size="11" fill="#0b0b0b">7</text>
+<text x="510.0" y="213.0" text-anchor="middle" font-size="11" fill="#52514e">9</text>
+<path d="M543.0,196 V137.4 a4.0,4.0 0 0 1 4.0,-4.0 H585.0 a4.0,4.0 0 0 1 4.0,4.0 V196 Z" fill="#2a78d6"/>
+<text x="566.0" y="126.4" text-anchor="middle" font-size="11" fill="#0b0b0b">7</text>
+<text x="566.0" y="213.0" text-anchor="middle" font-size="11" fill="#52514e">10</text>
+<path d="M599.0,196 V173.2 a4.0,4.0 0 0 1 4.0,-4.0 H641.0 a4.0,4.0 0 0 1 4.0,4.0 V196 Z" fill="#2a78d6"/>
+<text x="622.0" y="162.2" text-anchor="middle" font-size="11" fill="#0b0b0b">3</text>
+<text x="622.0" y="213.0" text-anchor="middle" font-size="11" fill="#52514e">11</text>
+<path d="M655.0,196 V30.0 a4.0,4.0 0 0 1 4.0,-4.0 H697.0 a4.0,4.0 0 0 1 4.0,4.0 V196 Z" fill="#2a78d6"/>
+<text x="678.0" y="19.0" text-anchor="middle" font-size="11" fill="#0b0b0b">19</text>
+<text x="678.0" y="213.0" text-anchor="middle" font-size="11" fill="#52514e">12</text>
+<line x1="34" y1="196" x2="706" y2="196" stroke="#d8d7d2" stroke-width="1"/>
+<text x="34" y="14" font-size="12" fill="#52514e">images per coin count</text>
+<text x="706" y="226" text-anchor="end" font-size="11" fill="#52514e">coins in image</text>
+</svg>
