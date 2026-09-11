@@ -1,60 +1,91 @@
+<div align="center">
+
 # 🪙 CoinCounter
 
-Count coins in phone photos using traditional computer vision, deep neural regression, and vision-capable LLMs. The goal is to compare accuracy, speed, and cost, then build a mobile app backed by AWS.
+**How many coins are in this photo?**
 
-## Planned workflow
+Three ways to answer it — classical computer vision, a deep regression model, and a
+vision-capable LLM — compared on accuracy, latency, and cost, then served to a mobile app.
 
-```text
-+-------------------+       +----------------------------+
-| Phone app         | photo | AWS backend                |
-| Capture & display | ----> | Count coins using:         |
-|                   | <---- | - Computer vision          |
-| Estimated count   | count | - Deep neural regression   |
-+-------------------+       | - Vision-capable LLM       |
-                            +----------------------------+
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
+[![Status](https://img.shields.io/badge/status-dataset%20ready-yellow.svg)](#roadmap)
+[![Dataset](https://img.shields.io/badge/images-117-brightgreen.svg)](#dataset)
+
+</div>
+
+---
+
+## Overview
+
+```mermaid
+flowchart LR
+    A["📱 Phone app<br/>capture photo"] -->|image| B["☁️ AWS backend"]
+    B --> C["Classical CV"]
+    B --> D["Deep regression"]
+    B --> E["Vision LLM"]
+    C & D & E --> F["🪙 Estimated count"]
+    F -->|count| A
 ```
+
+| Approach | Idea | Trades |
+|---|---|---|
+| **Classical CV** | Hough circles / blob detection | Fast and free; brittle to lighting and overlap |
+| **Deep regression** | CNN trained to predict a count | Accurate on in-domain photos; needs training data |
+| **Vision LLM** | Ask a multimodal model directly | Zero training; higher latency and per-call cost |
 
 ## Dataset
 
-117 phone photos of coins on a flat surface, each labeled with the number of coins it contains.
+117 phone photos of coins on a flat surface, each labeled with the number of coins visible.
+
+| Split | Images | Coin counts |
+|:--|--:|:--|
+| `train` | 82 | 1–12 |
+| `val` | 19 | 1–12 |
+| `test` | 16 | 1–12 |
+| **Total** | **117** | **764 coins** |
 
 ```text
 dataset/
-  images/        117 JPEGs, 480x480, converted from the original HEIC captures
-  labels.json    { "IMG_4315.jpg": 7, ... }  coin count per image
-  train/         82 images + labels.json
-  val/           19 images + labels.json
-  test/          16 images + labels.json
+├── images/       # 117 JPEGs, 480×480
+├── labels.json   # { "IMG_4315.jpg": 7, ... }
+├── train/        # images/ + labels.json
+├── val/
+└── test/
 ```
 
-| Split | Images | Coin counts |
-|-------|--------|-------------|
-| train | 82     | 1-12        |
-| val   | 19     | 1-12        |
-| test  | 16     | 1-12        |
-| **total** | **117** | 764 coins |
+Labels are a single integer per image — the coin count, nothing else. The 70/15/15 split is
+stratified by count (seed `42`), so every count appears in all three splits, and each split
+carries its own `labels.json` in the same `{filename: count}` shape.
 
-The 70/15/15 split uses seed 42 and is stratified by coin count, so every count from 1 to 12
-appears in all three splits. Each split folder carries its own `labels.json` with the same
-`{filename: count}` shape, so a split can be loaded without reading the global label file.
+> **Note**
+> Images were resized to an exact 480×480, a stretch rather than a center crop, so the original
+> aspect ratio is not preserved.
 
-**Labels** are integers: the number of coins visible in the image. Nothing else is annotated -
-no coin type, denomination, or position.
+```python
+import json
+from pathlib import Path
 
-**Images** were resized to an exact 480x480 (a stretch, not a center crop), so the original
-aspect ratio is not preserved.
+split = Path("dataset/train")
+labels = json.loads((split / "labels.json").read_text())
+for name, count in labels.items():
+    image_path = split / "images" / name   # 480×480 JPEG
+```
 
-## Archive
+## Repository layout
 
-`archive/tools/` holds the one-off scripts used to build the dataset. They are kept for
-reproducibility and are not part of the app:
+| Path | What it is |
+|---|---|
+| `dataset/` | Images, labels, and the train/val/test splits |
+| `archive/tools/` | One-off scripts that built the dataset — conversion, labeling UI, splitting |
 
-- `convert_images.sh` - HEIC to 480x480 JPEG via macOS `sips`
-- `label_tool.py` - browser labeler; shows one image at a time, autosaves to `labels.json`
-- `split_dataset.py` - regenerates the train/val/test split (`--ratios`, `--seed`, `--move`)
+## Roadmap
 
-**Status:** Planning stage; models, backend, and app are not yet implemented.
+- [x] Collect and label the photo dataset
+- [ ] Benchmark the three counting approaches on `test`
+- [ ] Serve the best model from an AWS backend
+- [ ] Ship the mobile capture app
 
-**Roadmap:** ~~Collect labeled photos~~ (done, see Dataset) → compare counting methods → build AWS backend → develop mobile app.
+## License
 
-**License:** [Apache 2.0](LICENSE).
+[Apache 2.0](LICENSE)
