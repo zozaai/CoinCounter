@@ -156,8 +156,18 @@ def natural_key(s):
     return [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", s)]
 
 
+def repo_root():
+    """Walk up from this file until a directory containing `dataset` is found."""
+    d = os.path.dirname(os.path.abspath(__file__))
+    while d != os.path.dirname(d):
+        if os.path.isdir(os.path.join(d, "dataset")):
+            return d
+        d = os.path.dirname(d)
+    return os.getcwd()
+
+
 def main():
-    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    here = repo_root()
     ap = argparse.ArgumentParser()
     ap.add_argument("--images", default=os.path.join(here, "dataset", "images"))
     ap.add_argument("--labels", default=os.path.join(here, "dataset", "labels.json"))
