@@ -1,0 +1,28 @@
+{
+  "dataset": "/home/dev/Documents/me/zozaai/CoinCounter/dataset",
+  "elapsed_seconds": 0.556052179001199,
+  "engines": [
+    {
+      "accuracy": 0.09401709401709402,
+      "cached": 0,
+      "completed": 117,
+      "configuration_id": "eb2b8547a9ef9555",
+      "engine": "random_guess",
+      "errors": [],
+      "expected": 117,
+      "loading_seconds": 0.0010900070010393392,
+      "mae": 3.6495726495726495,
+      "mean_ms": 4.1072584616245935,
+      "scored": 117,
+      "total_seconds": 0.4805492400100775
+    }
+  ],
+  "environment": {
+    "machine": "x86_64",
+    "platform": "Linux-6.8.0-139-generic-x86_64-with-glibc2.39",
+    "processor": "x86_64",
+    "python": "3.12.3"
+  },
+  "source_hash": "f0bb3960a41c30d26a30696ec9f42a09c61a1b71bb50ad65833e8a097779a553",
+  "split": "all"
+}

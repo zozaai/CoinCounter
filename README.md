@@ -5,12 +5,13 @@
 **How many coins are in this photo?**
 
 Three ways to answer it — classical computer vision, deep regression, and a vision LLM —
-benchmarked on one labeled dataset, then served to a mobile app.
+benchmarked on one labeled dataset and exposed through a reusable Python package.
+The server and iPhone app will live in separate repositories.
 
 <a href="LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/License-Apache_2.0-2a78d6?style=flat-square"></a>
 <img alt="Python 3.9+" src="https://img.shields.io/badge/Python-3.9+-2a78d6?style=flat-square&logo=python&logoColor=white">
 <a href="#dataset"><img alt="117 labeled images" src="https://img.shields.io/badge/Dataset-117_labeled_images-1baf7a?style=flat-square"></a>
-<a href="#roadmap"><img alt="Status: dataset ready" src="https://img.shields.io/badge/Status-Dataset_ready-eda100?style=flat-square"></a>
+<a href="#roadmap"><img alt="Status: random baseline ready" src="https://img.shields.io/badge/Status-Random_baseline_ready-eda100?style=flat-square"></a>
 
 <br><br>
 
@@ -22,7 +23,25 @@ benchmarked on one labeled dataset, then served to a mobile app.
 
 ---
 
-## How it works
+The dataset, reusable Python package, and benchmark workflow are implemented with a
+`random_guess` baseline. Hough, regression, and vision-LLM engines are explicit placeholders;
+Plotly visualization and engine-specific optional dependencies remain future work.
+
+```bash
+pip install -e .
+python -m benchmark.compute --dataset dataset --split test
+```
+
+Benchmark commands also work directly from the repository when Pillow and NumPy are
+installed. Configuration files currently use the JSON subset of YAML.
+
+<details open>
+<summary><b>How it works and repository boundaries</b></summary>
+
+This repository owns the Python package, counting engines, dataset, and benchmarks.
+The CoinCounter server repository will depend on a versioned package release and own
+Docker deployment and HTTP endpoints such as `/health_check` and `/count`. The iPhone
+app repository will own camera capture and communication with that server.
 
 ```mermaid
 flowchart LR
@@ -43,7 +62,11 @@ flowchart LR
 The point of the project is the comparison: same images, same metric, three very different
 cost and accuracy profiles.
 
-## Dataset
+</details>
+
+<a id="dataset"></a>
+<details open>
+<summary><b>Dataset</b></summary>
 
 117 phone photos of coins on a flat surface. Each image is a 480×480 JPEG labeled with a
 single integer — the number of coins visible.
@@ -89,15 +112,268 @@ split, and each split carries its own `labels.json` in the same `{filename: coun
 > Images were resized to an exact 480×480 — a stretch, not a center crop — so the original
 > aspect ratio is not preserved. Labels record the count only: no denomination or position.
 
-## Repository layout
+</details>
 
-| Path | Contents |
+<details open>
+<summary><b>Repository structure</b></summary>
+
+```text
+CoinCounter/
+├── pyproject.toml                 # Packaging, optional dependencies, CLI
+├── README.md
+├── LICENSE
+├── .gitignore
+├── src/
+│   └── coincounter/
+│       ├── __init__.py            # Public CoinCounter and CountResult exports
+│       ├── counter.py            # Initialize an engine once; reuse for frames
+│       ├── types.py              # Shared result and detection types
+│       ├── exceptions.py         # Predictable public errors
+│       ├── image.py              # Image loading and RGB normalization
+│       ├── engines/
+│       │   ├── __init__.py
+│       │   ├── base.py           # Abstract run/close interface
+│       │   ├── registry.py       # Engine lookup and lazy imports
+│       │   ├── random_guess.py   # Implemented training-prior baseline
+│       │   ├── hough.py
+│       │   ├── regression.py
+│       │   └── vision_llm.py
+│       └── cli/
+│           ├── __init__.py
+│           └── count.py          # Single-image count command
+├── benchmark/
+│   ├── __init__.py
+│   ├── compute.py                # Run, cache, measure, and print comparison
+│   ├── dataset.py                # Images, labels, and split selection
+│   ├── cache.py                  # Cache identity and validation
+│   ├── results.py                # Prediction files and JSON/CSV summaries
+│   ├── metrics.py                # Accuracy, error, timing, and cost
+│   └── reporting.py              # ASCII tables; Plotly plots later
+├── configs/
+│   └── benchmark/
+│       ├── default.yaml          # Explicit default engine list
+│       ├── random_guess.yaml     # Baseline seed; prior derived from train
+│       ├── hough.yaml
+│       ├── regression.yaml
+│       └── vision_llm.yaml
+├── dataset/                      # Existing images, labels, train/val/test
+├── models/
+│   └── README.md                 # Weight sources, versions, checksums
+├── results/                      # Generated predictions; ignored by Git
+├── reports/                      # Generated summaries and plots
+├── examples/
+│   ├── count_image.py
+│   └── count_frames.py
+├── tests/
+│   ├── test_counter.py
+│   ├── test_image.py
+│   ├── test_engine_contract.py
+│   ├── test_cli.py
+│   ├── engines/
+│   └── benchmark/
+├── docs/
+│   ├── python-api.md
+│   ├── adding-an-engine.md
+│   ├── benchmarking.md
+│   └── server-integration.md
+├── .github/workflows/            # CI and versioned package releases
+├── assets/                       # Existing README visuals
+└── archive/tools/                # Existing dataset preparation scripts
+```
+
+Only `src/coincounter/` ships as runtime code in the installed package. Dataset images,
+benchmark tooling, reports, and model weights are excluded from the distribution.
+`compute.py` is the benchmark entry point; separate `analyse.py` and `pareto.py` scripts
+are not needed. Calculations belong in `metrics.py`, presentation in `reporting.py`.
+
+</details>
+
+<details open>
+<summary><b>Python API and engine interface</b></summary>
+
+```python
+from coincounter import CoinCounter
+
+counter = CoinCounter(
+    engine="random_guess",
+    parameters={
+        "counts": list(range(1, 13)),
+        "weights": [6, 6, 8, 8, 9, 8, 7, 6, 5, 5, 1, 13],
+        "seed": 42,
+    },
+)
+
+try:
+    for frame in frames:
+        result = counter.run(frame)
+        print(result.count)
+finally:
+    counter.close()
+```
+
+`CoinCounter` accepts image paths or decoded RGB frames. Initialization loads the chosen
+engine and any model once; subsequent `run(image)` calls reuse it. Engines are importable
+modules implementing a common abstract interface, rather than standalone subprocesses.
+Both the counter and engines provide `run()` and `close()`; the counter also supports
+context-manager cleanup.
+
+| Result field | Contract |
 |---|---|
-| `dataset/` | Images, labels, and the train/val/test splits |
-| `assets/` | README visuals |
-| `archive/tools/` | One-off scripts that built the dataset — HEIC conversion, labeling UI, splitting |
+| `count` | Required nonnegative integer |
+| `confidence` | Optional; `None` when unavailable, not automatically comparable across engines |
+| `detections` | Optional positions or boxes when the engine supports them |
+| `metadata` | Additional JSON-compatible engine information |
 
-<details>
+Inference returns a result without printing or writing benchmark files. The CLI owns
+terminal output, and benchmark compute owns persistence and timing measurements.
+
+</details>
+
+<details open>
+<summary><b>Compute commands and result caching</b></summary>
+
+```bash
+# Installed package: one image, stdout contains only the integer count
+coincounter count image.jpg --engine random_guess --parameters prior.json
+
+# Benchmark one image and save its prediction
+python -m benchmark.compute --image dataset/images/IMG_4315.jpg --engine random_guess
+
+# Run every engine in configs/benchmark/default.yaml on the test split
+python -m benchmark.compute --dataset dataset --split test
+
+# Select engines explicitly
+python -m benchmark.compute --dataset dataset --split test --engine random_guess
+
+# Run all canonical dataset images once (without traversing split copies)
+python -m benchmark.compute --dataset dataset
+
+# Recompute cached predictions
+python -m benchmark.compute --dataset dataset --split test --force
+
+# Display fastest engines first
+python -m benchmark.compute --dataset dataset --split test --sort time
+```
+
+`prior.json` contains the `counts`, `weights`, and `seed` object shown in the Python API.
+Benchmark compute derives these frequencies automatically from `dataset/train/labels.json`.
+Only `random_guess` is currently registered and enabled by default. Multiple implemented
+engines can be supplied after `--engine`; requesting a placeholder produces a visible error.
+
+Omitting `--engine` uses an explicit default list, not every discovered engine. This keeps
+engines requiring weights, credentials, or paid API calls opt-in through configuration.
+Missing requirements and failed engines are reported visibly rather than silently omitted.
+Each selected engine is initialized once and reused across images.
+
+Single-image, single-engine runs print only the count to stdout, with diagnostics on stderr.
+Dataset runs and multi-engine comparisons print labeled results. `--forece` is accepted
+as an alias for `--force`.
+
+```text
+results/<engine>/<configuration-id>/
+├── manifest.json                 # Parameters, engine version, model identity
+└── <dataset-id>/<split>/          # "all" when no split is selected
+    ├── IMG_4315.jpg-<hash>.txt     # Integer count only, e.g. 7
+    └── IMG_4315.jpg-<hash>.json    # Image hash, timing, result metadata
+```
+
+Reuse a successful cached prediction only when image contents, package/benchmark source,
+parameters, and recorded environment match. Future model engines must also fingerprint
+weights or remote model revisions. Write artifacts atomically and validate the complete
+result pair before skipping inference. A failure or interrupted write is not a valid result.
+`--force` recomputes predictions even when a valid cache exists.
+
+</details>
+
+<details open>
+<summary><b>Metrics, ASCII comparison, and future plots</b></summary>
+
+Compute calculates metrics after inference or cache loading and prints an ASCII table.
+Default ordering is exact-count accuracy descending, then mean inference time ascending.
+`--sort time` orders by mean inference time ascending.
+
+Measured random-guess baseline (seed `42`, Python 3.12.3, Linux x86_64).
+The engine samples the empirical distribution of the **82 training labels**:
+
+| Coin count | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Training images | 6 | 6 | 8 | 8 | 9 | 8 | 7 | 6 | 5 | 5 | 1 | 13 |
+
+The normalized image hash and seed determine a reproducible random draw. The image is
+used only as an identity, not as visual evidence, and test labels never determine the prior.
+Confidence is unavailable (`None`). These are one-seed baseline measurements, not an
+estimate averaged over many random seeds.
+
+Command: `python -m benchmark.compute --dataset dataset --split test --force`
+
+```text
+Test split: 16 images
+
++--------------+--------+----------+-------+---------+-----------+--------+--------+
+| Engine       | Scored | Accuracy | MAE   | Mean ms | Total sec | Cached | Failed |
++--------------+--------+----------+-------+---------+-----------+--------+--------+
+| random_guess | 16/16  | 6.25%    | 3.938 | 4.766   | 0.076256  | 0      | 0      |
++--------------+--------+----------+-------+---------+-----------+--------+--------+
+```
+
+The test result is **1 exact prediction out of 16**, with 63 total absolute count errors.
+Initialization took 0.000233 seconds; the command took 0.090562 seconds. A second run
+reused all 16 cached predictions, retaining the recorded inference timings, and took
+0.008832 seconds. Timing is environment-dependent and includes decoding, so it does
+not represent just the cost of drawing a random number.
+
+Running on all 117 canonical images also completed without failures: **9.40% accuracy,
+3.650 MAE, 4.107 ms/image**, and 0.480549 seconds summed inference time. This includes
+training images and is a workflow check, not a held-out score.
+
+Saved measurements: [test JSON](reports/b301c58d4643/test/summary.json),
+[test CSV](reports/b301c58d4643/test/summary.csv), and
+[all-images JSON](reports/b301c58d4643/all/summary.json). Per-image count files are
+generated under `results/` and ignored by Git.
+
+- **Accuracy:** Percentage of scored images whose predicted count exactly matches the label.
+- **MAE:** Mean absolute count error; lower is better.
+- **Mean ms / Total sec:** Average and summed `CoinCounter.run` time, including image
+  decoding/normalization and inference, excluding model loading, hashing, and file writes.
+- **Scored / Cached:** Prediction coverage and number of reused predictions.
+
+Show failures and incomplete engines separately from the completed ranking. Report model
+loading and current command elapsed time separately. Cached timings are labeled as recorded
+measurements, not fresh inference time. Record hardware, execution conditions, and timing
+scope so comparisons are reproducible; capture API cost and memory use where available.
+
+Save JSON and CSV summaries under `reports/` alongside provenance identifying the inputs
+and configurations. Tune on train/validation data and reserve test for final comparisons.
+
+Later, `reporting.py` will use saved summaries for Plotly plots: inference time on the x-axis,
+accuracy on the y-axis, with the Pareto set highlighted. A configuration is nondominated
+when no other configuration is at least as accurate and at least as fast, with a strict
+improvement in one of those metrics. Plotting saved results must not require rerunning engines.
+
+</details>
+
+<details open>
+<summary><b>Integration with the separate server repository (planned)</b></summary>
+
+- Publish a versioned Python package; the server pins its dependency to a release.
+- Provide optional engine dependencies such as `coincounter[hough]`,
+  `coincounter[regression]`, and `coincounter[vision-llm]`, with lazy engine imports.
+- Accept explicit model paths and device settings. Avoid unexpected model downloads
+  during the first inference request.
+- Load a counter at server startup and close it at shutdown. Each worker owns its model
+  instance, so worker count affects memory consumption.
+- Treat instances as non-thread-safe unless an engine documents otherwise; the server
+  serializes access or manages separate instances.
+- Expose predictable invalid-image, unavailable-engine, model-loading, and inference errors
+  for the server to map to HTTP responses.
+- Keep credentials in environment variables or injected configuration, never committed files.
+
+Docker, HTTP routing, request validation, and iPhone code belong in their respective
+repositories and are not dependencies of this package.
+
+</details>
+
+<details open>
 <summary><b>Rebuilding the dataset from raw photos</b></summary>
 
 <br>
@@ -117,13 +393,27 @@ python3 archive/tools/split_dataset.py --ratios 0.7 0.15 0.15 --seed 42
 
 </details>
 
-## Roadmap
+<a id="roadmap"></a>
+<details open>
+<summary><b>Roadmap</b></summary>
 
 - [x] Collect and label the photo dataset
-- [ ] Benchmark the three approaches on `test`
-- [ ] Serve the winning model from an AWS backend
-- [ ] Ship the mobile capture app
+- [x] Build the installable package and reusable `CoinCounter` API
+- [x] Implement the common engine interface and random-guess baseline
+- [ ] Implement Hough, regression, and vision-LLM engines
+- [x] Add compute with default engines, caching, and `--force`
+- [x] Print ASCII accuracy/time comparisons and save JSON/CSV summaries
+- [x] Evaluate the random-guess baseline on `test`
+- [ ] Benchmark the approaches on `test`
+- [ ] Add Plotly comparisons and Pareto-set visualization
+- [ ] Publish versioned releases for the separate server repository
+- [ ] Build the Docker server and iPhone app in their own repositories
 
-## License
+</details>
+
+<details open>
+<summary><b>License</b></summary>
 
 [Apache 2.0](LICENSE) © CoinCounter contributors
+
+</details>
