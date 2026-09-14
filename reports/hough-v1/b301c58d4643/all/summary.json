@@ -1,0 +1,44 @@
+{
+  "dataset": "/home/dev/Documents/me/zozaai/CoinCounter/dataset",
+  "elapsed_seconds": 2.0846578130003763,
+  "engines": [
+    {
+      "accuracy": 0.09401709401709402,
+      "cached": 0,
+      "completed": 117,
+      "configuration_id": "5186a629aba5ef3f",
+      "engine": "random_guess",
+      "errors": [],
+      "expected": 117,
+      "loading_seconds": 0.00026168200020038057,
+      "mae": 3.6495726495726495,
+      "mean_ms": 4.434520051290747,
+      "scored": 117,
+      "total_seconds": 0.5188388460010174
+    },
+    {
+      "accuracy": 0.17094017094017094,
+      "cached": 0,
+      "completed": 117,
+      "configuration_id": "524b7e4b801b59df",
+      "engine": "hough",
+      "errors": [],
+      "expected": 117,
+      "loading_seconds": 0.00018630399972607847,
+      "mae": 4.042735042735043,
+      "mean_ms": 11.330993025694625,
+      "scored": 117,
+      "total_seconds": 1.325726184006271
+    }
+  ],
+  "environment": {
+    "machine": "x86_64",
+    "numpy": "1.26.4",
+    "pillow": "11.3.0",
+    "platform": "Linux-6.8.0-139-generic-x86_64-with-glibc2.39",
+    "processor": "x86_64",
+    "python": "3.12.3"
+  },
+  "source_hash": "b18efbe499d1b9287a52162cc2f872f5aae91f8810020e1389d186b0829f58f4",
+  "split": "all"
+}

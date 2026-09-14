@@ -1,1 +1,9 @@
-{}
+{
+  "accumulator_threshold": 30,
+  "blur_size": 5,
+  "dp": 1.0,
+  "edge_threshold": 200,
+  "max_radius": 30,
+  "min_distance": 24,
+  "min_radius": 10
+}

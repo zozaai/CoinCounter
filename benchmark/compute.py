@@ -3,6 +3,7 @@ import argparse
 from collections import Counter
 from dataclasses import asdict
 import json
+from importlib.metadata import version
 from pathlib import Path
 import platform
 import sys
@@ -44,7 +45,8 @@ def main(argv=None):
     except (OSError, ValueError, KeyError) as exc:
         parser.error(str(exc))
     environment = {"python": platform.python_version(), "platform": platform.platform(),
-                   "machine": platform.machine(), "processor": platform.processor()}
+                   "machine": platform.machine(), "processor": platform.processor(),
+                   "numpy": version("numpy"), "pillow": version("Pillow")}
     source_hash = identity({str(p.relative_to(ROOT)): file_hash(p)
                             for folder in [ROOT / "src/coincounter", ROOT / "benchmark"]
                             for p in sorted(folder.rglob("*.py"))})
@@ -63,6 +65,13 @@ def main(argv=None):
             manifest = {"engine": name, "parameters": parameters, "source_hash": source_hash,
                         "environment": environment,
                         "timing_scope": "CoinCounter.run: decode/normalize plus inference; excludes file hashing and persistence"}
+            if name == "hough":
+                from coincounter.exceptions import UnavailableEngineError
+                try:
+                    import cv2
+                except ImportError as exc:
+                    raise UnavailableEngineError("Install the Hough extra: pip install 'coincounter[hough]'") from exc
+                manifest["opencv"] = {"version": cv2.__version__, "threads": cv2.getNumThreads()}
             config_id = identity(manifest)[:16]
             destination = args.results / name / config_id
             write_json(destination / "manifest.json", manifest)

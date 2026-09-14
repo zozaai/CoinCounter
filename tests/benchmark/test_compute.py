@@ -19,7 +19,7 @@ class ComputeTests(unittest.TestCase):
                 (folder / "images").mkdir(parents=True)
                 Image.new("RGB", (4, 4)).save(folder / "images/a.png")
                 (folder / "labels.json").write_text(json.dumps({"a.png": count}))
-            args = ["--dataset", str(dataset), "--split", "test", "--results", str(root / "results"),
+            args = ["--dataset", str(dataset), "--split", "test", "--engine", "random_guess", "--results", str(root / "results"),
                     "--reports", str(root / "reports")]
             def run(extra=()):
                 with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):

@@ -9,6 +9,9 @@ description = "Reusable coin-counting engines"
 requires-python = ">=3.9"
 dependencies = ["Pillow>=9", "numpy>=1.21"]
 
+[project.optional-dependencies]
+hough = ["opencv-python-headless>=4.7,<5"]
+
 [project.scripts]
 coincounter = "coincounter.cli.count:main"
 
