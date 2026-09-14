@@ -34,3 +34,14 @@ and Pillow versions also enter cache identity. Timings are environment-specific.
 
 Comparison reports for this implementation are saved separately with
 `python -m benchmark.compute --dataset dataset --split test --force --reports reports/hough-v1`.
+
+## Viewing saved predictions
+
+`python -m benchmark.vis --dataset dataset --split test --engine hough` serves a local page
+(default `http://127.0.0.1:8765`) that pages through the selected images. Use `--image` to
+start at a specific file and `--no-browser` to skip opening a tab. The viewer reads
+`results/<engine>/<configuration>/` only: it never imports engines, loads models, or runs
+inference, so a missing prediction shows a message rather than a fresh count. Detection
+overlays come from the saved `detections` list. Grayscale and blur panels are display
+reconstructions using Pillow and the manifest `blur_size`; they are not recorded engine
+output. Configurations are listed newest first and selectable when more than one exists.

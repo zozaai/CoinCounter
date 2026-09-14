@@ -144,6 +144,7 @@ CoinCounter/
 ├── benchmark/
 │   ├── __init__.py
 │   ├── compute.py                # Run, cache, measure, and print comparison
+│   ├── vis.py                    # Read-only browser for saved predictions
 │   ├── tune_hough.py             # Training shortlist and validation selection
 │   ├── dataset.py                # Images, labels, and split selection
 │   ├── cache.py                  # Cache identity and validation
@@ -272,6 +273,20 @@ Each selected engine is initialized once and reused across images.
 Single-image, single-engine runs print only the count to stdout, with diagnostics on stderr.
 Dataset runs and multi-engine comparisons print labeled results. `--forece` is accepted
 as an alias for `--force`.
+
+```bash
+# Browse saved predictions in a local web page; never runs inference
+python -m benchmark.vis --dataset dataset --split test --engine hough
+python -m benchmark.vis --dataset dataset --engine hough --image dataset/images/IMG_4315.jpg
+```
+
+`benchmark.vis` opens a browser page showing each image with its filename, ground-truth
+count, saved prediction, error, and recorded inference time. Navigate with Previous/Next
+or the arrow keys; browsing stops at the dataset boundaries. Hough shows original →
+grayscale → median blur → detected circles, with the overlay drawn from saved detections.
+When several configurations exist for an engine, a dropdown selects between them. Missing
+predictions or stages are reported as messages, never recomputed. Grayscale and blur
+panels are Pillow reconstructions from the manifest parameters, shown for orientation.
 
 ```text
 results/<engine>/<configuration-id>/
@@ -443,6 +458,7 @@ python3 archive/tools/split_dataset.py --ratios 0.7 0.15 0.15 --seed 42
 - [ ] Implement regression and vision-LLM engines
 - [x] Add compute with default engines, caching, and `--force`
 - [x] Print ASCII accuracy/time comparisons and save JSON/CSV summaries
+- [x] Browse saved predictions and Hough stages in a read-only viewer
 - [x] Evaluate the random-guess baseline on `test`
 - [ ] Benchmark the approaches on `test`
 - [ ] Add Plotly comparisons and Pareto-set visualization
