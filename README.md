@@ -327,14 +327,13 @@ useful visual baseline, not yet a reliable counter on these textured backgrounds
 The comparison command took 0.267634 seconds. Timings include image decoding and depend
 on the environment; they are not isolated algorithm timings.
 
-Saved measurements: [test JSON](reports/hough-v1/b301c58d4643/test/summary.json),
-[test CSV](reports/hough-v1/b301c58d4643/test/summary.csv), and
-[tuning results](reports/hough-v1/tuning.json). Per-image count files are
-generated under `results/` and ignored by Git.
+The command generates local JSON/CSV summaries under `reports/hough-v1/<dataset-id>/test/`.
+Generated summaries and per-image count files under `results/` are ignored by Git.
+The [tuning results](reports/hough-v1/tuning.json) remain versioned.
 
 Both engines also completed all 117 images without failures. Hough scored **17.09%
 accuracy / 4.043 MAE**, versus **9.40% / 3.650** for random guess
-([all-images report](reports/hough-v1/b301c58d4643/all/summary.json)). This includes
+(local report: `reports/hough-v1/<dataset-id>/all/summary.json`). This includes
 training images and is not a held-out score. A cache check reused all 32 test predictions
 and verified the `--sort time` ordering without recomputing them.
 
