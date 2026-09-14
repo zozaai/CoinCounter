@@ -24,16 +24,16 @@ The server and iPhone app will live in separate repositories.
 ---
 
 The dataset, reusable Python package, and benchmark workflow are implemented with a
-`random_guess` baseline. Hough, regression, and vision-LLM engines are explicit placeholders;
-Plotly visualization and engine-specific optional dependencies remain future work.
+`random_guess` baseline and an OpenCV `hough` engine. Regression and vision-LLM engines
+remain explicit placeholders; Plotly visualization is future work.
 
 ```bash
-pip install -e .
+pip install -e '.[hough]'
 python -m benchmark.compute --dataset dataset --split test
 ```
 
 Benchmark commands also work directly from the repository when Pillow and NumPy are
-installed. Configuration files currently use the JSON subset of YAML.
+installed (plus OpenCV for Hough). Configuration files currently use the JSON subset of YAML.
 
 <details open>
 <summary><b>How it works and repository boundaries</b></summary>
@@ -144,6 +144,7 @@ CoinCounter/
 ├── benchmark/
 │   ├── __init__.py
 │   ├── compute.py                # Run, cache, measure, and print comparison
+│   ├── tune_hough.py             # Training shortlist and validation selection
 │   ├── dataset.py                # Images, labels, and split selection
 │   ├── cache.py                  # Cache identity and validation
 │   ├── results.py                # Prediction files and JSON/CSV summaries
@@ -257,8 +258,11 @@ python -m benchmark.compute --dataset dataset --split test --sort time
 
 `prior.json` contains the `counts`, `weights`, and `seed` object shown in the Python API.
 Benchmark compute derives these frequencies automatically from `dataset/train/labels.json`.
-Only `random_guess` is currently registered and enabled by default. Multiple implemented
+`random_guess` and `hough` are registered and enabled by default. Multiple implemented
 engines can be supplied after `--engine`; requesting a placeholder produces a visible error.
+
+Run only Hough with `python -m benchmark.compute --dataset dataset --split test --engine hough`.
+For the installed CLI, use `coincounter count image.jpg --engine hough --parameters configs/benchmark/hough.yaml`.
 
 Omitting `--engine` uses an explicit default list, not every discovered engine. This keeps
 engines requiring weights, credentials, or paid API calls opt-in through configuration.
@@ -292,8 +296,8 @@ Compute calculates metrics after inference or cache loading and prints an ASCII 
 Default ordering is exact-count accuracy descending, then mean inference time ascending.
 `--sort time` orders by mean inference time ascending.
 
-Measured random-guess baseline (seed `42`, Python 3.12.3, Linux x86_64).
-The engine samples the empirical distribution of the **82 training labels**:
+Measured engine comparison (Python 3.12.3, Linux x86_64, OpenCV 4.7.0).
+The random-guess baseline (seed `42`) samples the empirical distribution of the **82 training labels**:
 
 | Coin count | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -304,7 +308,7 @@ used only as an identity, not as visual evidence, and test labels never determin
 Confidence is unavailable (`None`). These are one-seed baseline measurements, not an
 estimate averaged over many random seeds.
 
-Command: `python -m benchmark.compute --dataset dataset --split test --force`
+Command: `python -m benchmark.compute --dataset dataset --split test --force --reports reports/hough-v1`
 
 ```text
 Test split: 16 images
@@ -312,24 +316,26 @@ Test split: 16 images
 +--------------+--------+----------+-------+---------+-----------+--------+--------+
 | Engine       | Scored | Accuracy | MAE   | Mean ms | Total sec | Cached | Failed |
 +--------------+--------+----------+-------+---------+-----------+--------+--------+
-| random_guess | 16/16  | 6.25%    | 3.938 | 4.766   | 0.076256  | 0      | 0      |
+| hough        | 16/16  | 18.75%   | 4.312 | 9.406   | 0.150504  | 0      | 0      |
+| random_guess | 16/16  | 6.25%    | 3.938 | 4.245   | 0.067919  | 0      | 0      |
 +--------------+--------+----------+-------+---------+-----------+--------+--------+
 ```
 
-The test result is **1 exact prediction out of 16**, with 63 total absolute count errors.
-Initialization took 0.000233 seconds; the command took 0.090562 seconds. A second run
-reused all 16 cached predictions, retaining the recorded inference timings, and took
-0.008832 seconds. Timing is environment-dependent and includes decoding, so it does
-not represent just the cost of drawing a random number.
+Hough gets **3/16 counts exactly right**, versus **1/16** for random guess, but its total
+absolute error is larger (69 versus 63 coins). It is also slower in this run. Hough is a
+useful visual baseline, not yet a reliable counter on these textured backgrounds.
+The comparison command took 0.267634 seconds. Timings include image decoding and depend
+on the environment; they are not isolated algorithm timings.
 
-Running on all 117 canonical images also completed without failures: **9.40% accuracy,
-3.650 MAE, 4.107 ms/image**, and 0.480549 seconds summed inference time. This includes
-training images and is a workflow check, not a held-out score.
+The command generates local JSON/CSV summaries under `reports/hough-v1/<dataset-id>/test/`.
+Generated summaries and per-image count files under `results/` are ignored by Git.
+The [tuning results](reports/hough-v1/tuning.json) remain versioned.
 
-Saved measurements: [test JSON](reports/b301c58d4643/test/summary.json),
-[test CSV](reports/b301c58d4643/test/summary.csv), and
-[all-images JSON](reports/b301c58d4643/all/summary.json). Per-image count files are
-generated under `results/` and ignored by Git.
+Both engines also completed all 117 images without failures. Hough scored **17.09%
+accuracy / 4.043 MAE**, versus **9.40% / 3.650** for random guess
+(local report: `reports/hough-v1/<dataset-id>/all/summary.json`). This includes
+training images and is not a held-out score. A cache check reused all 32 test predictions
+and verified the `--sort time` ordering without recomputing them.
 
 - **Accuracy:** Percentage of scored images whose predicted count exactly matches the label.
 - **MAE:** Mean absolute count error; lower is better.
@@ -349,6 +355,39 @@ Later, `reporting.py` will use saved summaries for Plotly plots: inference time 
 accuracy on the y-axis, with the Pareto set highlighted. A configuration is nondominated
 when no other configuration is at least as accurate and at least as fast, with a strict
 improvement in one of those metrics. Plotting saved results must not require rerunning engines.
+
+</details>
+
+<details open>
+<summary><b>Hough engine and parameter selection</b></summary>
+
+Install `pip install -e '.[hough]'`, then reuse `CoinCounter("hough")` across frames.
+The engine converts RGB to grayscale, applies a median filter, and detects circles with
+[OpenCV HoughCircles](https://docs.opencv.org/4.x/d4/d70/tutorial_hough_circle.html).
+It returns the count and `{x, y, radius}` detections in input-image pixels. Confidence is
+`None`; no calibrated confidence score is available. No model weights are needed.
+
+`python -m benchmark.tune_hough` evaluates 24 configurations on a fixed 21-image training
+subset, shortlists five by exact-count accuracy then MAE, and selects on all 19 validation
+images. Test images and labels are not used during tuning. The selected configuration
+scored **26.32% accuracy / 3.526 MAE on validation** and **14.63% / 4.110 on full train**.
+An initial training-only sweep with permissive thresholds was stopped because of excessive
+false circles; the saved tuning report describes the final grid.
+
+| Parameter | Selected value |
+|---|---:|
+| `dp` | 1.0 |
+| `min_distance` | 24 px |
+| `min_radius` / `max_radius` | 10 / 30 px |
+| `edge_threshold` | 200 |
+| `accumulator_threshold` | 30 |
+| `blur_size` | 5 |
+
+The same defaults are in the engine and `configs/benchmark/hough.yaml`. Radius limits,
+edge thresholds, and accumulator thresholds were searched; spacing, dp, and blur were
+fixed. These pixel-scale settings target the 480×480 dataset and may need adjustment for
+other resolutions. Patterned surfaces, noncircular projections, and overlapping coins
+remain limitations. See [benchmarking notes](docs/benchmarking.md) for reproducibility.
 
 </details>
 
@@ -400,7 +439,8 @@ python3 archive/tools/split_dataset.py --ratios 0.7 0.15 0.15 --seed 42
 - [x] Collect and label the photo dataset
 - [x] Build the installable package and reusable `CoinCounter` API
 - [x] Implement the common engine interface and random-guess baseline
-- [ ] Implement Hough, regression, and vision-LLM engines
+- [x] Implement and evaluate the Hough engine
+- [ ] Implement regression and vision-LLM engines
 - [x] Add compute with default engines, caching, and `--force`
 - [x] Print ASCII accuracy/time comparisons and save JSON/CSV summaries
 - [x] Evaluate the random-guess baseline on `test`

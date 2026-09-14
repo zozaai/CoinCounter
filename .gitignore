@@ -5,5 +5,7 @@ __pycache__/
 build/
 dist/
 results/
+reports/**/summary.csv
+reports/**/summary.json
 models/*
 !models/README.md

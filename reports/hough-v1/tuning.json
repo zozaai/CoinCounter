@@ -1,0 +1,419 @@
+{
+  "candidates": [
+    {
+      "parameters": {
+        "accumulator_threshold": 30,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 120,
+        "max_radius": 40,
+        "min_distance": 24,
+        "min_radius": 12
+      },
+      "train": {
+        "accuracy": 0.2857142857142857,
+        "mae": 30.095238095238095
+      },
+      "val": {
+        "accuracy": 0.2631578947368421,
+        "mae": 19.05263157894737
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 30,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 120,
+        "max_radius": 50,
+        "min_distance": 24,
+        "min_radius": 15
+      },
+      "train": {
+        "accuracy": 0.2857142857142857,
+        "mae": 51.38095238095238
+      },
+      "val": {
+        "accuracy": 0.2631578947368421,
+        "mae": 34.89473684210526
+      }
+    },
+    {
+      "full_train": {
+        "accuracy": 0.14634146341463414,
+        "mae": 4.109756097560975
+      },
+      "parameters": {
+        "accumulator_threshold": 30,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 200,
+        "max_radius": 30,
+        "min_distance": 24,
+        "min_radius": 10
+      },
+      "train": {
+        "accuracy": 0.23809523809523808,
+        "mae": 3.5238095238095237
+      },
+      "val": {
+        "accuracy": 0.2631578947368421,
+        "mae": 3.526315789473684
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 30,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 200,
+        "max_radius": 40,
+        "min_distance": 24,
+        "min_radius": 12
+      },
+      "train": {
+        "accuracy": 0.23809523809523808,
+        "mae": 17.80952380952381
+      },
+      "val": {
+        "accuracy": 0.2631578947368421,
+        "mae": 9.473684210526315
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 30,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 200,
+        "max_radius": 50,
+        "min_distance": 24,
+        "min_radius": 15
+      },
+      "train": {
+        "accuracy": 0.23809523809523808,
+        "mae": 34.61904761904762
+      },
+      "val": {
+        "accuracy": 0.21052631578947367,
+        "mae": 17.473684210526315
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 30,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 120,
+        "max_radius": 30,
+        "min_distance": 24,
+        "min_radius": 10
+      },
+      "train": {
+        "accuracy": 0.19047619047619047,
+        "mae": 4.0
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 45,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 120,
+        "max_radius": 50,
+        "min_distance": 24,
+        "min_radius": 15
+      },
+      "train": {
+        "accuracy": 0.14285714285714285,
+        "mae": 4.142857142857143
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 45,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 120,
+        "max_radius": 40,
+        "min_distance": 24,
+        "min_radius": 12
+      },
+      "train": {
+        "accuracy": 0.14285714285714285,
+        "mae": 4.714285714285714
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 45,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 200,
+        "max_radius": 50,
+        "min_distance": 24,
+        "min_radius": 15
+      },
+      "train": {
+        "accuracy": 0.14285714285714285,
+        "mae": 4.9523809523809526
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 45,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 200,
+        "max_radius": 40,
+        "min_distance": 24,
+        "min_radius": 12
+      },
+      "train": {
+        "accuracy": 0.14285714285714285,
+        "mae": 5.095238095238095
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 45,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 120,
+        "max_radius": 30,
+        "min_distance": 24,
+        "min_radius": 10
+      },
+      "train": {
+        "accuracy": 0.09523809523809523,
+        "mae": 5.142857142857143
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 45,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 200,
+        "max_radius": 30,
+        "min_distance": 24,
+        "min_radius": 10
+      },
+      "train": {
+        "accuracy": 0.09523809523809523,
+        "mae": 5.285714285714286
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 60,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 120,
+        "max_radius": 30,
+        "min_distance": 24,
+        "min_radius": 10
+      },
+      "train": {
+        "accuracy": 0.047619047619047616,
+        "mae": 5.571428571428571
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 60,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 120,
+        "max_radius": 40,
+        "min_distance": 24,
+        "min_radius": 12
+      },
+      "train": {
+        "accuracy": 0.047619047619047616,
+        "mae": 5.571428571428571
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 60,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 120,
+        "max_radius": 50,
+        "min_distance": 24,
+        "min_radius": 15
+      },
+      "train": {
+        "accuracy": 0.047619047619047616,
+        "mae": 5.571428571428571
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 60,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 200,
+        "max_radius": 40,
+        "min_distance": 24,
+        "min_radius": 12
+      },
+      "train": {
+        "accuracy": 0.0,
+        "mae": 5.666666666666667
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 60,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 200,
+        "max_radius": 50,
+        "min_distance": 24,
+        "min_radius": 15
+      },
+      "train": {
+        "accuracy": 0.0,
+        "mae": 5.666666666666667
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 60,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 200,
+        "max_radius": 30,
+        "min_distance": 24,
+        "min_radius": 10
+      },
+      "train": {
+        "accuracy": 0.0,
+        "mae": 5.714285714285714
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 75,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 120,
+        "max_radius": 30,
+        "min_distance": 24,
+        "min_radius": 10
+      },
+      "train": {
+        "accuracy": 0.0,
+        "mae": 6.0
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 75,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 120,
+        "max_radius": 40,
+        "min_distance": 24,
+        "min_radius": 12
+      },
+      "train": {
+        "accuracy": 0.0,
+        "mae": 6.0
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 75,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 120,
+        "max_radius": 50,
+        "min_distance": 24,
+        "min_radius": 15
+      },
+      "train": {
+        "accuracy": 0.0,
+        "mae": 6.0
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 75,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 200,
+        "max_radius": 30,
+        "min_distance": 24,
+        "min_radius": 10
+      },
+      "train": {
+        "accuracy": 0.0,
+        "mae": 6.0
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 75,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 200,
+        "max_radius": 40,
+        "min_distance": 24,
+        "min_radius": 12
+      },
+      "train": {
+        "accuracy": 0.0,
+        "mae": 6.0
+      }
+    },
+    {
+      "parameters": {
+        "accumulator_threshold": 75,
+        "blur_size": 5,
+        "dp": 1.0,
+        "edge_threshold": 200,
+        "max_radius": 50,
+        "min_distance": 24,
+        "min_radius": 15
+      },
+      "train": {
+        "accuracy": 0.0,
+        "mae": 6.0
+      }
+    }
+  ],
+  "label_hashes": {
+    "train": "fa5d71f22f4c920500b3eaca45fce9d8593f20a5be02efb16a9d25b8b4797dd2",
+    "val": "4ea46a13811a3cffd1c11ca4ff78fe22aaf968009639df2f65932bf70debc8f0"
+  },
+  "opencv_threads": 1,
+  "opencv_version": "4.7.0",
+  "selected": {
+    "full_train": {
+      "accuracy": 0.14634146341463414,
+      "mae": 4.109756097560975
+    },
+    "parameters": {
+      "accumulator_threshold": 30,
+      "blur_size": 5,
+      "dp": 1.0,
+      "edge_threshold": 200,
+      "max_radius": 30,
+      "min_distance": 24,
+      "min_radius": 10
+    },
+    "train": {
+      "accuracy": 0.23809523809523808,
+      "mae": 3.5238095238095237
+    },
+    "val": {
+      "accuracy": 0.2631578947368421,
+      "mae": 3.526315789473684
+    }
+  },
+  "selection": "24 candidates on sorted train images [::4]; top 5 on validation; accuracy then MAE",
+  "training_subset_size": 21
+}
