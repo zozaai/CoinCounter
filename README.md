@@ -11,7 +11,7 @@ The server and iPhone app will live in separate repositories.
 <a href="LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/License-Apache_2.0-2a78d6?style=flat-square"></a>
 <img alt="Python 3.9+" src="https://img.shields.io/badge/Python-3.9+-2a78d6?style=flat-square&logo=python&logoColor=white">
 <a href="#dataset"><img alt="117 labeled images" src="https://img.shields.io/badge/Dataset-117_labeled_images-1baf7a?style=flat-square"></a>
-<a href="#roadmap"><img alt="Status: dataset ready" src="https://img.shields.io/badge/Status-Dataset_ready-eda100?style=flat-square"></a>
+<a href="#roadmap"><img alt="Status: random baseline ready" src="https://img.shields.io/badge/Status-Random_baseline_ready-eda100?style=flat-square"></a>
 
 <br><br>
 
@@ -23,10 +23,19 @@ The server and iPhone app will live in separate repositories.
 
 ---
 
-The dataset is ready. The package, engines, and benchmark commands below describe the
-agreed design and are not implemented yet.
+The dataset, reusable Python package, and benchmark workflow are implemented with a
+`random_guess` baseline. Hough, regression, and vision-LLM engines are explicit placeholders;
+Plotly visualization and engine-specific optional dependencies remain future work.
 
-<details>
+```bash
+pip install -e .
+python -m benchmark.compute --dataset dataset --split test
+```
+
+Benchmark commands also work directly from the repository when Pillow and NumPy are
+installed. Configuration files currently use the JSON subset of YAML.
+
+<details open>
 <summary><b>How it works and repository boundaries</b></summary>
 
 This repository owns the Python package, counting engines, dataset, and benchmarks.
@@ -56,7 +65,7 @@ cost and accuracy profiles.
 </details>
 
 <a id="dataset"></a>
-<details>
+<details open>
 <summary><b>Dataset</b></summary>
 
 117 phone photos of coins on a flat surface. Each image is a 480×480 JPEG labeled with a
@@ -105,8 +114,8 @@ split, and each split carries its own `labels.json` in the same `{filename: coun
 
 </details>
 
-<details>
-<summary><b>Repository structure (planned)</b></summary>
+<details open>
+<summary><b>Repository structure</b></summary>
 
 ```text
 CoinCounter/
@@ -125,6 +134,7 @@ CoinCounter/
 │       │   ├── __init__.py
 │       │   ├── base.py           # Abstract run/close interface
 │       │   ├── registry.py       # Engine lookup and lazy imports
+│       │   ├── random_guess.py   # Implemented training-prior baseline
 │       │   ├── hough.py
 │       │   ├── regression.py
 │       │   └── vision_llm.py
@@ -142,6 +152,7 @@ CoinCounter/
 ├── configs/
 │   └── benchmark/
 │       ├── default.yaml          # Explicit default engine list
+│       ├── random_guess.yaml     # Baseline seed; prior derived from train
 │       ├── hough.yaml
 │       ├── regression.yaml
 │       └── vision_llm.yaml
@@ -177,15 +188,19 @@ are not needed. Calculations belong in `metrics.py`, presentation in `reporting.
 
 </details>
 
-<details>
-<summary><b>Python API and engine interface (planned)</b></summary>
+<details open>
+<summary><b>Python API and engine interface</b></summary>
 
 ```python
 from coincounter import CoinCounter
 
 counter = CoinCounter(
-    engine="regression",
-    parameters={"model_path": "/models/coin-regression-v1.pt", "device": "cpu"},
+    engine="random_guess",
+    parameters={
+        "counts": list(range(1, 13)),
+        "weights": [6, 6, 8, 8, 9, 8, 7, 6, 5, 5, 1, 13],
+        "seed": 42,
+    },
 )
 
 try:
@@ -214,21 +229,21 @@ terminal output, and benchmark compute owns persistence and timing measurements.
 
 </details>
 
-<details>
-<summary><b>Compute commands and result caching (planned)</b></summary>
+<details open>
+<summary><b>Compute commands and result caching</b></summary>
 
 ```bash
 # Installed package: one image, stdout contains only the integer count
-coincounter count image.jpg --engine hough
+coincounter count image.jpg --engine random_guess --parameters prior.json
 
 # Benchmark one image and save its prediction
-python -m benchmark.compute --image dataset/images/IMG_4315.jpg --engine hough
+python -m benchmark.compute --image dataset/images/IMG_4315.jpg --engine random_guess
 
 # Run every engine in configs/benchmark/default.yaml on the test split
 python -m benchmark.compute --dataset dataset --split test
 
 # Select engines explicitly
-python -m benchmark.compute --dataset dataset --split test --engine hough regression
+python -m benchmark.compute --dataset dataset --split test --engine random_guess
 
 # Run all canonical dataset images once (without traversing split copies)
 python -m benchmark.compute --dataset dataset
@@ -239,6 +254,11 @@ python -m benchmark.compute --dataset dataset --split test --force
 # Display fastest engines first
 python -m benchmark.compute --dataset dataset --split test --sort time
 ```
+
+`prior.json` contains the `counts`, `weights`, and `seed` object shown in the Python API.
+Benchmark compute derives these frequencies automatically from `dataset/train/labels.json`.
+Only `random_guess` is currently registered and enabled by default. Multiple implemented
+engines can be supplied after `--engine`; requesting a placeholder produces a visible error.
 
 Omitting `--engine` uses an explicit default list, not every discovered engine. This keeps
 engines requiring weights, credentials, or paid API calls opt-in through configuration.
@@ -253,41 +273,68 @@ as an alias for `--force`.
 results/<engine>/<configuration-id>/
 ├── manifest.json                 # Parameters, engine version, model identity
 └── <dataset-id>/<split>/          # "all" when no split is selected
-    ├── IMG_4315.txt               # Integer count only, e.g. 7
-    └── IMG_4315.json              # Image hash, timing, result metadata
+    ├── IMG_4315.jpg-<hash>.txt     # Integer count only, e.g. 7
+    └── IMG_4315.jpg-<hash>.json    # Image hash, timing, result metadata
 ```
 
-Reuse a successful cached prediction only when image contents, engine implementation,
-parameters, and model identity match. Write artifacts atomically and validate the complete
+Reuse a successful cached prediction only when image contents, package/benchmark source,
+parameters, and recorded environment match. Future model engines must also fingerprint
+weights or remote model revisions. Write artifacts atomically and validate the complete
 result pair before skipping inference. A failure or interrupted write is not a valid result.
 `--force` recomputes predictions even when a valid cache exists.
 
 </details>
 
-<details>
-<summary><b>Metrics, ASCII comparison, and future plots (planned)</b></summary>
+<details open>
+<summary><b>Metrics, ASCII comparison, and future plots</b></summary>
 
 Compute calculates metrics after inference or cache loading and prints an ASCII table.
 Default ordering is exact-count accuracy descending, then mean inference time ascending.
 `--sort time` orders by mean inference time ascending.
 
-Illustrative output only — these are not measured benchmark results:
+Measured random-guess baseline (seed `42`, Python 3.12.3, Linux x86_64).
+The engine samples the empirical distribution of the **82 training labels**:
+
+| Coin count | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Training images | 6 | 6 | 8 | 8 | 9 | 8 | 7 | 6 | 5 | 5 | 1 | 13 |
+
+The normalized image hash and seed determine a reproducible random draw. The image is
+used only as an identity, not as visual evidence, and test labels never determine the prior.
+Confidence is unavailable (`None`). These are one-seed baseline measurements, not an
+estimate averaged over many random seeds.
+
+Command: `python -m benchmark.compute --dataset dataset --split test --force`
 
 ```text
 Test split: 16 images
 
-+------------+--------+----------+-------+---------+-----------+--------+
-| Engine     | Scored | Accuracy | MAE   | Mean ms | Total sec | Cached |
-+------------+--------+----------+-------+---------+-----------+--------+
-| regression | 16/16  | 87.50%   | 0.125 |   24.00 |      0.38 |      0 |
-| vision_llm | 16/16  | 81.25%   | 0.188 | 1200.00 |     19.20 |      0 |
-| hough      | 16/16  | 68.75%   | 0.438 |    8.00 |      0.13 |      0 |
-+------------+--------+----------+-------+---------+-----------+--------+
++--------------+--------+----------+-------+---------+-----------+--------+--------+
+| Engine       | Scored | Accuracy | MAE   | Mean ms | Total sec | Cached | Failed |
++--------------+--------+----------+-------+---------+-----------+--------+--------+
+| random_guess | 16/16  | 6.25%    | 3.938 | 4.766   | 0.076256  | 0      | 0      |
++--------------+--------+----------+-------+---------+-----------+--------+--------+
 ```
+
+The test result is **1 exact prediction out of 16**, with 63 total absolute count errors.
+Initialization took 0.000233 seconds; the command took 0.090562 seconds. A second run
+reused all 16 cached predictions, retaining the recorded inference timings, and took
+0.008832 seconds. Timing is environment-dependent and includes decoding, so it does
+not represent just the cost of drawing a random number.
+
+Running on all 117 canonical images also completed without failures: **9.40% accuracy,
+3.650 MAE, 4.107 ms/image**, and 0.480549 seconds summed inference time. This includes
+training images and is a workflow check, not a held-out score.
+
+Saved measurements: [test JSON](reports/b301c58d4643/test/summary.json),
+[test CSV](reports/b301c58d4643/test/summary.csv), and
+[all-images JSON](reports/b301c58d4643/all/summary.json). Per-image count files are
+generated under `results/` and ignored by Git.
 
 - **Accuracy:** Percentage of scored images whose predicted count exactly matches the label.
 - **MAE:** Mean absolute count error; lower is better.
-- **Mean ms / Total sec:** Average and summed inference time, excluding model loading.
+- **Mean ms / Total sec:** Average and summed `CoinCounter.run` time, including image
+  decoding/normalization and inference, excluding model loading, hashing, and file writes.
 - **Scored / Cached:** Prediction coverage and number of reused predictions.
 
 Show failures and incomplete engines separately from the completed ranking. Report model
@@ -305,7 +352,7 @@ improvement in one of those metrics. Plotting saved results must not require rer
 
 </details>
 
-<details>
+<details open>
 <summary><b>Integration with the separate server repository (planned)</b></summary>
 
 - Publish a versioned Python package; the server pins its dependency to a release.
@@ -326,7 +373,7 @@ repositories and are not dependencies of this package.
 
 </details>
 
-<details>
+<details open>
 <summary><b>Rebuilding the dataset from raw photos</b></summary>
 
 <br>
@@ -347,14 +394,16 @@ python3 archive/tools/split_dataset.py --ratios 0.7 0.15 0.15 --seed 42
 </details>
 
 <a id="roadmap"></a>
-<details>
+<details open>
 <summary><b>Roadmap</b></summary>
 
 - [x] Collect and label the photo dataset
-- [ ] Build the installable package and reusable `CoinCounter` API
-- [ ] Implement the common engine interface and counting engines
-- [ ] Add compute with default engines, caching, and `--force`
-- [ ] Print ASCII accuracy/time comparisons and save JSON/CSV summaries
+- [x] Build the installable package and reusable `CoinCounter` API
+- [x] Implement the common engine interface and random-guess baseline
+- [ ] Implement Hough, regression, and vision-LLM engines
+- [x] Add compute with default engines, caching, and `--force`
+- [x] Print ASCII accuracy/time comparisons and save JSON/CSV summaries
+- [x] Evaluate the random-guess baseline on `test`
 - [ ] Benchmark the approaches on `test`
 - [ ] Add Plotly comparisons and Pareto-set visualization
 - [ ] Publish versioned releases for the separate server repository
@@ -362,7 +411,7 @@ python3 archive/tools/split_dataset.py --ratios 0.7 0.15 0.15 --seed 42
 
 </details>
 
-<details>
+<details open>
 <summary><b>License</b></summary>
 
 [Apache 2.0](LICENSE) © CoinCounter contributors
