@@ -4,7 +4,8 @@ from ..exceptions import UnavailableEngineError
 
 ENGINES = {"random_guess": ("random_guess", "RandomGuessEngine"),
            "hough": ("hough", "HoughEngine"),
-           "regression": ("regression", "RegressionEngine")}
+           "regression": ("regression", "RegressionEngine"),
+           "grounding_dino": ("grounding_dino", "GroundingDinoEngine")}
 
 
 def create_engine(name, parameters):

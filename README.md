@@ -4,14 +4,15 @@
 
 **How many coins are in this photo?**
 
-Three ways to answer it — classical computer vision, deep regression, and a vision LLM —
+Four ways to answer it — classical computer vision, deep regression, zero-shot open-vocabulary
+detection, and a vision LLM —
 benchmarked on one labeled dataset and exposed through a reusable Python package.
 The server and iPhone app will live in separate repositories.
 
 <a href="LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/License-Apache_2.0-2a78d6?style=flat-square"></a>
 <img alt="Python 3.9+" src="https://img.shields.io/badge/Python-3.9+-2a78d6?style=flat-square&logo=python&logoColor=white">
 <a href="#dataset"><img alt="117 labeled images" src="https://img.shields.io/badge/Dataset-117_labeled_images-1baf7a?style=flat-square"></a>
-<a href="#roadmap"><img alt="Status: regression engine 56% on test" src="https://img.shields.io/badge/Status-Regression_56%25_test_accuracy-1baf7a?style=flat-square"></a>
+<a href="#roadmap"><img alt="Status: Grounding DINO 94% on test" src="https://img.shields.io/badge/Status-Grounding_DINO_94%25_test_accuracy-1baf7a?style=flat-square"></a>
 
 <br><br>
 
@@ -24,14 +25,14 @@ The server and iPhone app will live in separate repositories.
 ---
 
 The dataset, reusable Python package, and benchmark workflow are implemented with a
-`random_guess` baseline, an OpenCV `hough` engine, and a ResNet-18 `regression` engine
-trained on this laptop-sized dataset. The vision-LLM engine remains an explicit
-placeholder; Plotly visualization is future work.
+`random_guess` baseline, an OpenCV `hough` engine, a ResNet-18 `regression` engine trained
+on this laptop-sized dataset, and a zero-shot `grounding_dino` open-vocabulary detector.
+The vision-LLM engine remains an explicit placeholder; Plotly visualization is future work.
 
 ```bash
-pip install -e '.[hough,regression]'
+pip install -e '.[hough,regression,grounding-dino]'
 python -m benchmark.train_regression --dataset dataset --out models/regression   # ~90 s on an M4
-python -m benchmark.compute --dataset dataset --split test --engine hough random_guess regression
+python -m benchmark.compute --dataset dataset --split test --engine grounding_dino regression hough random_guess
 ```
 
 Benchmark commands also work directly from the repository when Pillow and NumPy are
@@ -50,8 +51,9 @@ flowchart LR
     A["📱 Capture"] -->|photo| B["☁️ Backend"]
     B --> C["Classical CV"]
     B --> D["Deep regression"]
-    B --> E["Vision LLM"]
-    C & D & E --> F["🪙 Count"]
+    B --> E["Open-vocab detector"]
+    B --> G["Vision LLM"]
+    C & D & E & G --> F["🪙 Count"]
     F -->|result| A
 ```
 
@@ -59,9 +61,10 @@ flowchart LR
 |---|---|---|
 | **Classical CV** | Hough circles / blob detection | Fast and free — brittle to lighting and overlap |
 | **Deep regression** | CNN trained to predict a count | Accurate in-domain — needs training data |
+| **Open-vocabulary detection** | Grounding DINO prompted with "coin." | No training, boxes for free — 660 MB model, ~0.5 s per image |
 | **Vision LLM** | Ask a multimodal model directly | No training — higher latency and cost per call |
 
-The point of the project is the comparison: same images, same metric, three very different
+The point of the project is the comparison: same images, same metric, four very different
 cost and accuracy profiles.
 
 </details>
@@ -139,6 +142,7 @@ CoinCounter/
 │       │   ├── random_guess.py   # Implemented training-prior baseline
 │       │   ├── hough.py
 │       │   ├── regression.py     # ResNet-18 count regression, output bounded to [0, 20]
+│       │   ├── grounding_dino.py # Zero-shot detector; count = boxes above threshold
 │       │   └── vision_llm.py
 │       └── cli/
 │           ├── __init__.py
@@ -160,6 +164,7 @@ CoinCounter/
 │       ├── random_guess.yaml     # Baseline seed; prior derived from train
 │       ├── hough.yaml
 │       ├── regression.yaml
+│       ├── grounding_dino.yaml
 │       └── vision_llm.yaml
 ├── dataset/                      # Existing images, labels, train/val/test
 ├── models/
@@ -263,9 +268,9 @@ python -m benchmark.compute --dataset dataset --split test --sort time
 
 `prior.json` contains the `counts`, `weights`, and `seed` object shown in the Python API.
 Benchmark compute derives these frequencies automatically from `dataset/train/labels.json`.
-`random_guess`, `hough`, and `regression` are registered; the first two are enabled by
-default, and `regression` is opt-in because it needs trained weights and the `regression`
-extra. Multiple implemented engines can be supplied after `--engine`; requesting a
+`random_guess`, `hough`, `regression`, and `grounding_dino` are registered; the first two are
+enabled by default. `regression` is opt-in because it needs trained weights, and
+`grounding_dino` because it downloads a 660 MB checkpoint from Hugging Face on first use. Multiple implemented engines can be supplied after `--engine`; requesting a
 placeholder produces a visible error.
 
 Run only Hough with `python -m benchmark.compute --dataset dataset --split test --engine hough`.
@@ -329,37 +334,43 @@ used only as an identity, not as visual evidence, and test labels never determin
 Confidence is unavailable (`None`). These are one-seed baseline measurements, not an
 estimate averaged over many random seeds.
 
-Command: `python -m benchmark.compute --dataset dataset --split test --force --engine hough random_guess regression --reports reports/regression-v1`
-(Apple M4, macOS 26.5, Python 3.14.0, PyTorch 2.14.0 on MPS, OpenCV 4.14.0)
+Command: `python -m benchmark.compute --dataset dataset --split test --force --engine grounding_dino regression hough random_guess --reports reports/grounding-dino-v1`
+(Apple M4, macOS 26.5, Python 3.14.0, PyTorch 2.14.0 on MPS, transformers 5.17.0, OpenCV 4.14.0)
 
 ```text
 Test split: 16 images
 
-+--------------+--------+----------+-------+---------+-----------+--------+--------+
-| Engine       | Scored | Accuracy | MAE   | Mean ms | Total sec | Cached | Failed |
-+--------------+--------+----------+-------+---------+-----------+--------+--------+
-| regression   | 16/16  | 56.25%   | 0.438 | 41.911  | 0.670571  | 0      | 0      |
-| hough        | 16/16  | 18.75%   | 4.312 | 3.044   | 0.048705  | 0      | 0      |
-| random_guess | 16/16  | 6.25%    | 3.938 | 1.598   | 0.025569  | 0      | 0      |
-+--------------+--------+----------+-------+---------+-----------+--------+--------+
++----------------+--------+----------+-------+---------+-----------+--------+--------+
+| Engine         | Scored | Accuracy | MAE   | Mean ms | Total sec | Cached | Failed |
++----------------+--------+----------+-------+---------+-----------+--------+--------+
+| grounding_dino | 16/16  | 93.75%   | 0.062 | 576.890 | 9.230239  | 0      | 0      |
+| regression     | 16/16  | 56.25%   | 0.438 | 9.770   | 0.156321  | 0      | 0      |
+| hough          | 16/16  | 18.75%   | 4.312 | 2.421   | 0.038734  | 0      | 0      |
+| random_guess   | 16/16  | 6.25%    | 3.938 | 1.533   | 0.024532  | 0      | 0      |
++----------------+--------+----------+-------+---------+-----------+--------+--------+
 ```
 
-The regression engine gets **9/16 counts exactly right** with only 7 coins of total
-absolute error, versus **3/16** for Hough (69 coins) and **1/16** for random guess
-(63 coins). It is the slowest engine and the only one that needs model loading (1.42 s
-here). Its mean time includes the first MPS call, which is a warm-up; the same engine
-averaged 8.7 ms per image over the 117-image run. Timings include image decoding and
-depend on the environment; they are not isolated algorithm timings.
+Grounding DINO gets **15/16 counts exactly right** with a single coin of total absolute
+error, without any training on this dataset. The regression engine gets **9/16** (7 coins),
+Hough **3/16** (69 coins), and random guess **1/16** (63 coins). The ranking is a clean
+accuracy-versus-cost trade: Grounding DINO is about 60× slower than regression, 240× slower
+than Hough, and needs 5.9 s of model loading plus a 660 MB download. Timings include image
+decoding and depend on the environment; they are not isolated algorithm timings.
 
-The command generates local JSON/CSV summaries under `reports/regression-v1/<dataset-id>/test/`.
+The command generates local JSON/CSV summaries under `reports/grounding-dino-v1/<dataset-id>/test/`.
 Generated summaries and per-image count files under `results/` are ignored by Git.
 The Hough [tuning results](reports/hough-v1/tuning.json) and the regression
 [training log](models/regression/training.json) remain versioned.
 
-All three engines also completed all 117 images without failures: regression **81.20%
-accuracy / 0.188 MAE**, Hough **17.09% / 4.043**, random guess **9.40% / 3.650**. This
-includes training images and is not a held-out score. On the 19 validation images used for
-model selection, regression scored **78.95% / 0.211** and Hough **26.32% / 3.526**.
+| Split | grounding_dino | regression | hough | random_guess |
+|:--|--:|--:|--:|--:|
+| `test` (16, held out) | **93.75% / 0.062** | 56.25% / 0.438 | 18.75% / 4.312 | 6.25% / 3.938 |
+| `val` (19, used for selection) | 94.74% / 0.053 | 78.95% / 0.211 | 26.32% / 3.526 | 15.79% / 3.158 |
+| all 117 (includes train) | 96.58% / 0.034 | 81.20% / 0.188 | 17.09% / 4.043 | 9.40% / 3.650 |
+
+Cells are exact accuracy / MAE. Only the `test` row is a held-out score. Regression was
+trained on `train` and its checkpoint chosen on `val`; the Grounding DINO threshold was
+chosen on `train` + `val`; Hough parameters were tuned on `train` and selected on `val`.
 
 - **Accuracy:** Percentage of scored images whose predicted count exactly matches the label.
 - **MAE:** Mean absolute count error; lower is better.
@@ -451,11 +462,49 @@ records the weights' SHA-256, so retrained weights never reuse a stale cache. Se
 </details>
 
 <details open>
+<summary><b>Grounding DINO engine (zero-shot detection)</b></summary>
+
+Install `pip install -e '.[grounding-dino]'` (PyTorch and Hugging Face transformers). The
+engine runs [Grounding DINO](https://huggingface.co/IDEA-Research/grounding-dino-tiny), an
+open-vocabulary detector, with the text prompt `"coin."` and counts the boxes whose score
+clears `box_threshold`. No training or dataset-specific weights are involved. Detections
+are `{x1, y1, x2, y2, score}` boxes in input-image pixels, so the
+[results viewer](#compute-commands-and-result-caching) draws them directly. Confidence is
+`None`; per-box scores are in `detections`.
+
+```python
+from coincounter import CoinCounter
+
+with CoinCounter("grounding_dino") as counter:          # downloads ~660 MB on first use
+    result = counter.run("dataset/images/IMG_4315.jpg")
+    print(result.count, result.detections[0])
+```
+
+| Parameter | Default | Note |
+|---|---|---|
+| `model` | `IDEA-Research/grounding-dino-tiny` | Any Grounding DINO checkpoint id or local path |
+| `prompt` | `"coin."` | Lower-cased; a trailing period is added if missing |
+| `box_threshold` | `0.4` | Selected on `train` + `val` (98/101 exact) |
+| `text_threshold` | `0.25` | Token-to-phrase threshold; not sensitive here |
+| `device` | `"auto"` | MPS, then CUDA, then CPU |
+| `revision` | `None` | Pin a Hugging Face commit for reproducibility |
+
+Real coins score 0.6–0.8 and background clutter scores below 0.2, so exact accuracy is flat
+from `box_threshold` 0.30 to 0.45 on both `train` and `val`. The benchmark manifest records
+the resolved model commit hash and transformers version, so a checkpoint update invalidates
+the cache. Known limitations: ~0.5 s per image on an M4 (far slower than the other
+engines), a 660 MB download, and one over-count on `test` from a spurious box scoring
+exactly 0.40, right at the threshold.
+
+</details>
+
+<details open>
 <summary><b>Integration with the separate server repository (planned)</b></summary>
 
 - Publish a versioned Python package; the server pins its dependency to a release.
 - Provide optional engine dependencies such as `coincounter[hough]`,
-  `coincounter[regression]`, and `coincounter[vision-llm]`, with lazy engine imports.
+  `coincounter[regression]`, `coincounter[grounding-dino]`, and `coincounter[vision-llm]`,
+  with lazy engine imports.
 - Accept explicit model paths and device settings. Avoid unexpected model downloads
   during the first inference request.
 - Load a counter at server startup and close it at shutdown. Each worker owns its model
@@ -500,12 +549,13 @@ python3 archive/tools/split_dataset.py --ratios 0.7 0.15 0.15 --seed 42
 - [x] Implement the common engine interface and random-guess baseline
 - [x] Implement and evaluate the Hough engine
 - [x] Implement and evaluate the regression engine
+- [x] Implement and evaluate the Grounding DINO zero-shot detector
 - [ ] Implement the vision-LLM engine
 - [x] Add compute with default engines, caching, and `--force`
 - [x] Print ASCII accuracy/time comparisons and save JSON/CSV summaries
 - [x] Browse saved predictions and Hough stages in a read-only viewer
 - [x] Evaluate the random-guess baseline on `test`
-- [x] Benchmark random guess, Hough, and regression on `test`
+- [x] Benchmark random guess, Hough, regression, and Grounding DINO on `test`
 - [ ] Add Plotly comparisons and Pareto-set visualization
 - [ ] Publish versioned releases for the separate server repository
 - [ ] Build the Docker server and iPhone app in their own repositories

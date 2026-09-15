@@ -21,6 +21,14 @@ then CPU). The count is `round(max_count * sigmoid(output))`, so it always lies 
 A missing or incompatible file raises `ModelLoadingError`; missing PyTorch raises
 `UnavailableEngineError`.
 
+Install `pip install -e '.[grounding-dino]'` for the zero-shot detector.
+`CoinCounter("grounding_dino")` downloads `IDEA-Research/grounding-dino-tiny` (~660 MB) on
+first use and reuses the Hugging Face cache afterwards. Parameters: `model`, `prompt="coin."`,
+`box_threshold=0.4`, `text_threshold=0.25`, `device="auto"`, `revision=None`,
+`local_files_only=False`. The count is the number of boxes above `box_threshold`; detections
+are `{x1, y1, x2, y2, score}` in input pixels. Confidence is `None`. Loading failures raise
+`ModelLoadingError`; missing transformers raises `UnavailableEngineError`.
+
 `run` accepts image paths, PIL images, or uint8 RGB arrays. `close` is idempotent;
 context-manager cleanup is supported. Results contain count, optional confidence,
 optional detections, and metadata. A closed counter rejects inference.
