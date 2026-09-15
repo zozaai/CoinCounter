@@ -3,7 +3,8 @@ from importlib import import_module
 from ..exceptions import UnavailableEngineError
 
 ENGINES = {"random_guess": ("random_guess", "RandomGuessEngine"),
-           "hough": ("hough", "HoughEngine")}
+           "hough": ("hough", "HoughEngine"),
+           "regression": ("regression", "RegressionEngine")}
 
 
 def create_engine(name, parameters):

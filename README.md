@@ -11,7 +11,7 @@ The server and iPhone app will live in separate repositories.
 <a href="LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/License-Apache_2.0-2a78d6?style=flat-square"></a>
 <img alt="Python 3.9+" src="https://img.shields.io/badge/Python-3.9+-2a78d6?style=flat-square&logo=python&logoColor=white">
 <a href="#dataset"><img alt="117 labeled images" src="https://img.shields.io/badge/Dataset-117_labeled_images-1baf7a?style=flat-square"></a>
-<a href="#roadmap"><img alt="Status: random baseline ready" src="https://img.shields.io/badge/Status-Random_baseline_ready-eda100?style=flat-square"></a>
+<a href="#roadmap"><img alt="Status: regression engine 56% on test" src="https://img.shields.io/badge/Status-Regression_56%25_test_accuracy-1baf7a?style=flat-square"></a>
 
 <br><br>
 
@@ -24,12 +24,14 @@ The server and iPhone app will live in separate repositories.
 ---
 
 The dataset, reusable Python package, and benchmark workflow are implemented with a
-`random_guess` baseline and an OpenCV `hough` engine. Regression and vision-LLM engines
-remain explicit placeholders; Plotly visualization is future work.
+`random_guess` baseline, an OpenCV `hough` engine, and a ResNet-18 `regression` engine
+trained on this laptop-sized dataset. The vision-LLM engine remains an explicit
+placeholder; Plotly visualization is future work.
 
 ```bash
-pip install -e '.[hough]'
-python -m benchmark.compute --dataset dataset --split test
+pip install -e '.[hough,regression]'
+python -m benchmark.train_regression --dataset dataset --out models/regression   # ~90 s on an M4
+python -m benchmark.compute --dataset dataset --split test --engine hough random_guess regression
 ```
 
 Benchmark commands also work directly from the repository when Pillow and NumPy are
@@ -136,7 +138,7 @@ CoinCounter/
 │       │   ├── registry.py       # Engine lookup and lazy imports
 │       │   ├── random_guess.py   # Implemented training-prior baseline
 │       │   ├── hough.py
-│       │   ├── regression.py
+│       │   ├── regression.py     # ResNet-18 count regression, output bounded to [0, 20]
 │       │   └── vision_llm.py
 │       └── cli/
 │           ├── __init__.py
@@ -146,6 +148,7 @@ CoinCounter/
 │   ├── compute.py                # Run, cache, measure, and print comparison
 │   ├── vis.py                    # Read-only browser for saved predictions
 │   ├── tune_hough.py             # Training shortlist and validation selection
+│   ├── train_regression.py       # Fine-tune ResNet-18 on train, select on val
 │   ├── dataset.py                # Images, labels, and split selection
 │   ├── cache.py                  # Cache identity and validation
 │   ├── results.py                # Prediction files and JSON/CSV summaries
@@ -160,7 +163,8 @@ CoinCounter/
 │       └── vision_llm.yaml
 ├── dataset/                      # Existing images, labels, train/val/test
 ├── models/
-│   └── README.md                 # Weight sources, versions, checksums
+│   ├── README.md                 # Weight sources, versions, checksums
+│   └── regression/training.json  # Versioned training log; weights are ignored by Git
 ├── results/                      # Generated predictions; ignored by Git
 ├── reports/                      # Generated summaries and plots
 ├── examples/
@@ -259,8 +263,10 @@ python -m benchmark.compute --dataset dataset --split test --sort time
 
 `prior.json` contains the `counts`, `weights`, and `seed` object shown in the Python API.
 Benchmark compute derives these frequencies automatically from `dataset/train/labels.json`.
-`random_guess` and `hough` are registered and enabled by default. Multiple implemented
-engines can be supplied after `--engine`; requesting a placeholder produces a visible error.
+`random_guess`, `hough`, and `regression` are registered; the first two are enabled by
+default, and `regression` is opt-in because it needs trained weights and the `regression`
+extra. Multiple implemented engines can be supplied after `--engine`; requesting a
+placeholder produces a visible error.
 
 Run only Hough with `python -m benchmark.compute --dataset dataset --split test --engine hough`.
 For the installed CLI, use `coincounter count image.jpg --engine hough --parameters configs/benchmark/hough.yaml`.
@@ -323,7 +329,8 @@ used only as an identity, not as visual evidence, and test labels never determin
 Confidence is unavailable (`None`). These are one-seed baseline measurements, not an
 estimate averaged over many random seeds.
 
-Command: `python -m benchmark.compute --dataset dataset --split test --force --reports reports/hough-v1`
+Command: `python -m benchmark.compute --dataset dataset --split test --force --engine hough random_guess regression --reports reports/regression-v1`
+(Apple M4, macOS 26.5, Python 3.14.0, PyTorch 2.14.0 on MPS, OpenCV 4.14.0)
 
 ```text
 Test split: 16 images
@@ -331,26 +338,28 @@ Test split: 16 images
 +--------------+--------+----------+-------+---------+-----------+--------+--------+
 | Engine       | Scored | Accuracy | MAE   | Mean ms | Total sec | Cached | Failed |
 +--------------+--------+----------+-------+---------+-----------+--------+--------+
-| hough        | 16/16  | 18.75%   | 4.312 | 9.406   | 0.150504  | 0      | 0      |
-| random_guess | 16/16  | 6.25%    | 3.938 | 4.245   | 0.067919  | 0      | 0      |
+| regression   | 16/16  | 56.25%   | 0.438 | 41.911  | 0.670571  | 0      | 0      |
+| hough        | 16/16  | 18.75%   | 4.312 | 3.044   | 0.048705  | 0      | 0      |
+| random_guess | 16/16  | 6.25%    | 3.938 | 1.598   | 0.025569  | 0      | 0      |
 +--------------+--------+----------+-------+---------+-----------+--------+--------+
 ```
 
-Hough gets **3/16 counts exactly right**, versus **1/16** for random guess, but its total
-absolute error is larger (69 versus 63 coins). It is also slower in this run. Hough is a
-useful visual baseline, not yet a reliable counter on these textured backgrounds.
-The comparison command took 0.267634 seconds. Timings include image decoding and depend
-on the environment; they are not isolated algorithm timings.
+The regression engine gets **9/16 counts exactly right** with only 7 coins of total
+absolute error, versus **3/16** for Hough (69 coins) and **1/16** for random guess
+(63 coins). It is the slowest engine and the only one that needs model loading (1.42 s
+here). Its mean time includes the first MPS call, which is a warm-up; the same engine
+averaged 8.7 ms per image over the 117-image run. Timings include image decoding and
+depend on the environment; they are not isolated algorithm timings.
 
-The command generates local JSON/CSV summaries under `reports/hough-v1/<dataset-id>/test/`.
+The command generates local JSON/CSV summaries under `reports/regression-v1/<dataset-id>/test/`.
 Generated summaries and per-image count files under `results/` are ignored by Git.
-The [tuning results](reports/hough-v1/tuning.json) remain versioned.
+The Hough [tuning results](reports/hough-v1/tuning.json) and the regression
+[training log](models/regression/training.json) remain versioned.
 
-Both engines also completed all 117 images without failures. Hough scored **17.09%
-accuracy / 4.043 MAE**, versus **9.40% / 3.650** for random guess
-(local report: `reports/hough-v1/<dataset-id>/all/summary.json`). This includes
-training images and is not a held-out score. A cache check reused all 32 test predictions
-and verified the `--sort time` ordering without recomputing them.
+All three engines also completed all 117 images without failures: regression **81.20%
+accuracy / 0.188 MAE**, Hough **17.09% / 4.043**, random guess **9.40% / 3.650**. This
+includes training images and is not a held-out score. On the 19 validation images used for
+model selection, regression scored **78.95% / 0.211** and Hough **26.32% / 3.526**.
 
 - **Accuracy:** Percentage of scored images whose predicted count exactly matches the label.
 - **MAE:** Mean absolute count error; lower is better.
@@ -407,6 +416,41 @@ remain limitations. See [benchmarking notes](docs/benchmarking.md) for reproduci
 </details>
 
 <details open>
+<summary><b>Regression engine and training</b></summary>
+
+Install `pip install -e '.[regression]'` (PyTorch and torchvision). The engine is a
+torchvision ResNet-18 initialised from ImageNet weights with its classifier replaced by a
+single output; the count is `max_count * sigmoid(output)`, so predictions are bounded to
+**0–20** by construction and rounded to the nearest integer. Input is resized to
+320×320 and ImageNet-normalised. Confidence is `None`; `metadata.raw_count` carries the
+unrounded prediction.
+
+```bash
+python -m benchmark.train_regression --dataset dataset --out models/regression
+```
+
+Training fine-tunes every layer on the 82 training images for 60 epochs with AdamW,
+one-cycle learning rate (peak 3e-4), Smooth-L1 loss, and flip / 90° rotation / colour-jitter
+augmentation. Each epoch is scored on the 19 validation images and the checkpoint with the
+best exact-count accuracy (then MAE) is kept. Test images are never read. The run takes
+about 90 s on an Apple M4 and writes `models/regression/resnet18-320.pt` (45 MB, ignored by
+Git) plus a versioned `training.json` with the full epoch history.
+
+| Input size | Val accuracy | Val MAE | Train time (M4) |
+|---:|---:|---:|---:|
+| 224 | 47.4% | 0.947 | 40 s |
+| **320** | **78.9%** | **0.211** | 92 s |
+| 448 | 68.4% | 0.368 | 168 s |
+
+Coins are 20–60 px across at 480×480, so 224 px input loses detail; 320 px was selected on
+validation. With 82 training images the model is data-limited and single-seed; expect
+run-to-run variance and a drop on new backgrounds or lighting. The benchmark manifest
+records the weights' SHA-256, so retrained weights never reuse a stale cache. See
+[models/README.md](models/README.md) for the checksum of the reported weights.
+
+</details>
+
+<details open>
 <summary><b>Integration with the separate server repository (planned)</b></summary>
 
 - Publish a versioned Python package; the server pins its dependency to a release.
@@ -455,12 +499,13 @@ python3 archive/tools/split_dataset.py --ratios 0.7 0.15 0.15 --seed 42
 - [x] Build the installable package and reusable `CoinCounter` API
 - [x] Implement the common engine interface and random-guess baseline
 - [x] Implement and evaluate the Hough engine
-- [ ] Implement regression and vision-LLM engines
+- [x] Implement and evaluate the regression engine
+- [ ] Implement the vision-LLM engine
 - [x] Add compute with default engines, caching, and `--force`
 - [x] Print ASCII accuracy/time comparisons and save JSON/CSV summaries
 - [x] Browse saved predictions and Hough stages in a read-only viewer
 - [x] Evaluate the random-guess baseline on `test`
-- [ ] Benchmark the approaches on `test`
+- [x] Benchmark random guess, Hough, and regression on `test`
 - [ ] Add Plotly comparisons and Pareto-set visualization
 - [ ] Publish versioned releases for the separate server repository
 - [ ] Build the Docker server and iPhone app in their own repositories

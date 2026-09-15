@@ -13,6 +13,14 @@ Radii and minimum spacing are in input pixels, so adjust them for other image sc
 Detections contain `x`, `y`, and `radius` in original image coordinates.
 Hough confidence is `None`; the accumulator threshold is not a calibrated probability.
 
+Install `pip install -e '.[regression]'` for the regression engine. `CoinCounter("regression",
+{"model_path": "models/regression/resnet18-320.pt"})` loads the weights once. Parameters:
+`model_path` (required), `image_size=320`, `max_count=20`, `device="auto"` (MPS, then CUDA,
+then CPU). The count is `round(max_count * sigmoid(output))`, so it always lies in
+`[0, max_count]`. Confidence is `None`; `metadata.raw_count` is the unrounded prediction.
+A missing or incompatible file raises `ModelLoadingError`; missing PyTorch raises
+`UnavailableEngineError`.
+
 `run` accepts image paths, PIL images, or uint8 RGB arrays. `close` is idempotent;
 context-manager cleanup is supported. Results contain count, optional confidence,
 optional detections, and metadata. A closed counter rejects inference.

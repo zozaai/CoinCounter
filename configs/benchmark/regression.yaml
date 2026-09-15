@@ -1,1 +1,1 @@
-{}
+{"model_path": "models/regression/resnet18-320.pt", "image_size": 320, "max_count": 20}

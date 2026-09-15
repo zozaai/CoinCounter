@@ -9,3 +9,6 @@ reports/**/summary.csv
 reports/**/summary.json
 models/*
 !models/README.md
+!models/regression/
+models/regression/*
+!models/regression/training.json
