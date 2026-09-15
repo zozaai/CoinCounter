@@ -1,0 +1,1 @@
+{"model": "IDEA-Research/grounding-dino-tiny", "prompt": "coin.", "box_threshold": 0.4, "text_threshold": 0.25}

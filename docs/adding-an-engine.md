@@ -7,4 +7,5 @@ Add meaningful contract tests and a JSON-formatted YAML parameter file under
 
 The vision LLM module is a placeholder. Engines that take a `model_path` parameter get the
 weights' SHA-256 added to the benchmark manifest automatically (see `regression`); remote
-model revisions must be included in benchmark identity when the vision LLM is implemented.
+model revisions must be included in benchmark identity, as `grounding_dino` does by recording
+the resolved Hugging Face commit hash and transformers version in the manifest.

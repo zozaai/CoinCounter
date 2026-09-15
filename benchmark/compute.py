@@ -71,6 +71,17 @@ def main(argv=None):
                     from coincounter.exceptions import ModelLoadingError
                     raise ModelLoadingError(f"Model weights not found: {weights}")
                 manifest["weights_sha256"] = file_hash(weights)
+            if name == "grounding_dino":
+                from coincounter.exceptions import UnavailableEngineError
+                try:
+                    import transformers
+                    from transformers import AutoConfig
+                except ImportError as exc:
+                    raise UnavailableEngineError("Install the Grounding DINO extra: pip install 'coincounter[grounding-dino]'") from exc
+                config = AutoConfig.from_pretrained(parameters.get("model", "IDEA-Research/grounding-dino-tiny"),
+                                                    revision=parameters.get("revision"))
+                manifest["model_revision"] = getattr(config, "_commit_hash", None)
+                manifest["transformers"] = transformers.__version__
             if name == "hough":
                 from coincounter.exceptions import UnavailableEngineError
                 try:

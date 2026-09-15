@@ -21,3 +21,17 @@ The full epoch history is in [regression/training.json](regression/training.json
 Regenerate the weights with the recipe above; MPS/CUDA kernels are not bit-deterministic,
 so a retrained file will have a different checksum and close but not identical metrics.
 `benchmark.compute` records the weights' SHA-256 in each run's manifest.
+
+## grounding_dino (Hugging Face Hub)
+
+| Field | Value |
+|---|---|
+| Checkpoint | [`IDEA-Research/grounding-dino-tiny`](https://huggingface.co/IDEA-Research/grounding-dino-tiny) (Apache-2.0) |
+| Revision evaluated | `a2bb814dd30d776dcf7e30523b00659f4f141c71` |
+| Size | ~660 MB, downloaded to the Hugging Face cache on first use (not stored in this repository) |
+| Framework | PyTorch 2.14.0 / transformers 5.17.0, Apple M4 (MPS) |
+| Prompt / thresholds | `"coin."`, `box_threshold=0.4`, `text_threshold=0.25` |
+| Test | 93.75% exact accuracy, 0.062 MAE |
+
+Pass `revision` in the engine parameters to pin the commit. `benchmark.compute` records the
+resolved commit hash and transformers version in each run's manifest.
