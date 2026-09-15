@@ -51,6 +51,18 @@ includes the weights' SHA-256, so retraining invalidates the cache. Regression i
 `default.yaml` because it requires the `regression` extra and a trained weights file.
 The first MPS inference includes kernel warm-up, which inflates the mean on small splits.
 
+## Grounding DINO
+
+`grounding_dino` needs no training. The `box_threshold` of 0.4 was chosen by sweeping
+0.20–0.50 on `train` (82 images) and `val` (19 images) with the tiny checkpoint: exact
+accuracy plateaus from 0.30 to 0.45 on both splits and 0.40 and 0.45 tie at 98/101 correct.
+The test split was not used. The manifest records the resolved model commit hash and the
+transformers version. Expect ~0.5 s per image on an M4 and ~6 s of model loading; the
+checkpoint (~660 MB) is fetched into the Hugging Face cache on first use. Run the full
+comparison with `python -m benchmark.compute --dataset dataset --split test --force --engine
+grounding_dino regression hough random_guess --reports reports/grounding-dino-v1`.
+Set `COINCOUNTER_TEST_GROUNDING_DINO=1` to include the real-model unit test.
+
 ## Viewing saved predictions
 
 `python -m benchmark.vis --dataset dataset --split test --engine hough` serves a local page
