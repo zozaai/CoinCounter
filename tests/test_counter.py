@@ -15,4 +15,4 @@ class CounterTests(unittest.TestCase):
 
     def test_unimplemented_engine(self):
         with self.assertRaises(UnavailableEngineError):
-            CoinCounter("regression")
+            CoinCounter("vision_llm")

@@ -5,5 +5,6 @@ and add a lazy import entry to `engines/registry.py`. Return `CountResult` for R
 Add meaningful contract tests and a JSON-formatted YAML parameter file under
 `configs/benchmark`. Add the name to `default.yaml` only when ready for default use.
 
-Regression and vision LLM modules are placeholders. Model-file checksums and
-remote model revisions must be included in benchmark identity when these are implemented.
+The vision LLM module is a placeholder. Engines that take a `model_path` parameter get the
+weights' SHA-256 added to the benchmark manifest automatically (see `regression`); remote
+model revisions must be included in benchmark identity when the vision LLM is implemented.

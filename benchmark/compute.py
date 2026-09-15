@@ -65,6 +65,12 @@ def main(argv=None):
             manifest = {"engine": name, "parameters": parameters, "source_hash": source_hash,
                         "environment": environment,
                         "timing_scope": "CoinCounter.run: decode/normalize plus inference; excludes file hashing and persistence"}
+            if "model_path" in parameters:
+                weights = Path(parameters["model_path"])
+                if not weights.is_file():
+                    from coincounter.exceptions import ModelLoadingError
+                    raise ModelLoadingError(f"Model weights not found: {weights}")
+                manifest["weights_sha256"] = file_hash(weights)
             if name == "hough":
                 from coincounter.exceptions import UnavailableEngineError
                 try:

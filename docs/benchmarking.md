@@ -35,6 +35,22 @@ and Pillow versions also enter cache identity. Timings are environment-specific.
 Comparison reports for this implementation are saved separately with
 `python -m benchmark.compute --dataset dataset --split test --force --reports reports/hough-v1`.
 
+## Regression training
+
+`python -m benchmark.train_regression --dataset dataset --out models/regression` fine-tunes
+an ImageNet ResNet-18 (all layers) for 60 epochs on the train split with AdamW, one-cycle
+LR peaking at 3e-4, Smooth-L1 loss on the sigmoid-bounded count, and flip / rot90 /
+colour-jitter augmentation at 320×320. Each epoch is evaluated on val and the checkpoint
+with the best exact accuracy then MAE is saved as `resnet18-320.pt`; `training.json` records
+arguments, per-epoch metrics, and the selected epoch. The test split is never read.
+Options: `--image-size`, `--max-count`, `--epochs`, `--lr`, `--batch`, `--seed`, `--device`.
+
+Run the comparison with `python -m benchmark.compute --dataset dataset --split test --force
+--engine hough random_guess regression --reports reports/regression-v1`. The manifest
+includes the weights' SHA-256, so retraining invalidates the cache. Regression is not in
+`default.yaml` because it requires the `regression` extra and a trained weights file.
+The first MPS inference includes kernel warm-up, which inflates the mean on small splits.
+
 ## Viewing saved predictions
 
 `python -m benchmark.vis --dataset dataset --split test --engine hough` serves a local page
