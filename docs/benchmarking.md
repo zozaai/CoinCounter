@@ -3,7 +3,7 @@
 Run `python -m benchmark.compute --dataset dataset --split test` from the repository.
 Use `--engine`, `--force` (alias `--forece`), and `--sort time` as needed.
 Configurations currently use the JSON subset of YAML; general YAML syntax is not supported.
-The default engine list contains `random_guess` and `hough`. Install `pip install -e '.[hough]'`.
+The default engine list contains `random_guess` and `hough`. Install `pip install -e '.[benchmark,hough]'`.
 Missing OpenCV is reported as an engine failure; the random baseline remains usable alone.
 
 The baseline samples the training-label empirical distribution using seed 42 and a hash
@@ -13,9 +13,42 @@ used only for scoring. Training-set scores are not held-out evaluation.
 
 Timing includes decoding/normalization and inference, excludes hashing and persistence,
 and is measured sequentially without a warmup. Cached runs reuse original timings.
-Incomplete results sort after completed results and include errors. JSON/CSV summaries
-are saved in reports; raw predictions in results. Reports are overwritten for the same
-dataset selection; preserve a copy to retain an earlier comparison. Plotly is future work.
+Incomplete results sort after completed results and include errors. Each run saves:
+
+- `results/<split>_summary.json`: all table metrics, including `scored`,
+  `expected`, `accuracy` (a fraction from 0 to 1), `mae`, `mean_ms`, `total_seconds`,
+  `cached`, and `failed`, plus errors, loading time, and run provenance.
+- `results/<split>_accuracy_vs_time.html`: an interactive Plotly chart with
+  processing time (Mean ms) on the x-axis, accuracy displayed as a percentage on the
+  y-axis, and a labeled circle for each model. Hover for the table metrics. A line joins
+  Pareto-optimal models in increasing time order: no other eligible model is at least
+  as fast and as accurate with a strict improvement in one metric. Colored guide lines
+  extend each model to both axes, where ticks and labels show its exact time and accuracy.
+- `reports/<dataset-id>/<split>/summary.json` and `summary.csv`: the existing reports.
+
+The command prints the JSON and HTML paths. Open the HTML directly in a browser; Plotly
+is embedded, so no internet connection is needed. Partial results appear faded and are
+excluded from the frontier; models without accuracy or timing data are listed below the
+chart. Only fully scored, error-free runs are eligible for the frontier.
+
+`--results` changes the predictions and comparison output root; `--reports` changes the
+JSON/CSV report root. Raw predictions remain in `results/<engine>/<configuration>/`.
+Outputs are overwritten for the same dataset selection; preserve a copy to retain an
+earlier comparison. The selection is `all` without a split or `single` with `--image`.
+
+For example, a test split writes `results/test_summary.json` and
+`results/test_accuracy_vs_time.html`. Regenerate a comparison from a saved summary
+without loading any models:
+
+```python
+import json
+from pathlib import Path
+from benchmark.reporting import save_comparison
+
+folder = Path("results")
+summary = json.loads((folder / "test_summary.json").read_text())
+save_comparison(folder, summary, stem="test")
+```
 
 Hough tuning is reproducible with `python -m benchmark.tune_hough`. It evaluates 24
 configurations on 21 training images (sorted filenames, every fourth image), evaluates the

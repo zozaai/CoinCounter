@@ -4,6 +4,7 @@ from collections import Counter
 from dataclasses import asdict
 import json
 from importlib.metadata import version
+from importlib.util import find_spec
 from pathlib import Path
 import platform
 import sys
@@ -17,7 +18,7 @@ from coincounter import CoinCounter
 from .cache import cached_prediction, file_hash, identity
 from .dataset import labels_at, samples
 from .metrics import summarize
-from .reporting import save_summary, table
+from .reporting import save_comparison, save_summary, table
 from .results import save_prediction, write_json
 
 
@@ -28,7 +29,8 @@ def main(argv=None):
     parser.add_argument("--image", type=Path)
     parser.add_argument("--engine", nargs="+")
     parser.add_argument("--config-dir", type=Path, default=ROOT / "configs/benchmark")
-    parser.add_argument("--results", type=Path, default=ROOT / "results")
+    parser.add_argument("--results", type=Path, default=ROOT / "results",
+                        help="Directory for predictions, summary JSON, and the Plotly HTML comparison")
     parser.add_argument("--reports", type=Path, default=ROOT / "reports")
     parser.add_argument("--force", "--forece", action="store_true")
     parser.add_argument("--sort", choices=["accuracy", "time"], default="accuracy")
@@ -44,6 +46,8 @@ def main(argv=None):
         items = samples(args.dataset, args.split, args.image)
     except (OSError, ValueError, KeyError) as exc:
         parser.error(str(exc))
+    if find_spec("plotly") is None:
+        parser.error("Plotly is required for benchmark reports: pip install -e '.[benchmark]'")
     environment = {"python": platform.python_version(), "platform": platform.platform(),
                    "machine": platform.machine(), "processor": platform.processor(),
                    "numpy": version("numpy"), "pillow": version("Pillow")}
@@ -117,7 +121,7 @@ def main(argv=None):
         except Exception as exc:
             errors.append({"engine": name, "error": str(exc)})
         row = {"engine": name, "configuration_id": config_id, **summarize(records, len(items)),
-               "loading_seconds": loading, "errors": errors}
+               "loading_seconds": loading, "failed": len(errors), "errors": errors}
         rows.append(row)
         if args.image and len(engines) == 1 and records:
             print(records[0]["count"])
@@ -127,6 +131,7 @@ def main(argv=None):
                "environment": environment, "source_hash": source_hash,
                "elapsed_seconds": time.perf_counter() - started, "engines": rows}
     save_summary(args.reports / dataset_id / selection, summary)
+    summary_path, chart_path = save_comparison(args.results, summary, stem=selection)
     stream = sys.stderr if args.image and len(engines) == 1 else sys.stdout
     if not args.image or len(engines) > 1:
         print(table(rows, args.sort), file=stream)
@@ -134,6 +139,8 @@ def main(argv=None):
     for row in rows:
         print(f"{row['engine']} loading: {row['loading_seconds']:.6f}s", file=stream)
     print(f"Command elapsed: {summary['elapsed_seconds']:.6f}s", file=stream)
+    print(f"Summary JSON: {summary_path}", file=stream)
+    print(f"Plotly HTML: {chart_path}", file=stream)
     return 1 if any(row["errors"] for row in rows) else 0
 
 

@@ -14,7 +14,7 @@ The server and iPhone app will live in separate repositories.
 <a href="#dataset"><img alt="117 labeled images" src="https://img.shields.io/badge/Dataset-117_labeled_images-1baf7a?style=flat-square"></a>
 <a href="#roadmap"><img alt="Status: Grounding DINO 94% on test" src="https://img.shields.io/badge/Status-Grounding_DINO_94%25_test_accuracy-1baf7a?style=flat-square"></a>
 
-<br><br>
+<br>
 
 <img src="assets/samples.jpg" alt="Eight dataset photos, each badged with its coin count" width="820">
 
@@ -27,15 +27,16 @@ The server and iPhone app will live in separate repositories.
 The dataset, reusable Python package, and benchmark workflow are implemented with a
 `random_guess` baseline, an OpenCV `hough` engine, a ResNet-18 `regression` engine trained
 on this laptop-sized dataset, and a zero-shot `grounding_dino` open-vocabulary detector.
-The vision-LLM engine remains an explicit placeholder; Plotly visualization is future work.
+Benchmark runs save JSON metrics and an interactive Plotly accuracy/time comparison.
+The vision-LLM engine remains an explicit placeholder.
 
 ```bash
-pip install -e '.[hough,regression,grounding-dino]'
+pip install -e '.[benchmark,hough,regression,grounding-dino]'
 python -m benchmark.train_regression --dataset dataset --out models/regression   # ~90 s on an M4
 python -m benchmark.compute --dataset dataset --split test --engine grounding_dino regression hough random_guess
 ```
 
-Benchmark commands also work directly from the repository when Pillow and NumPy are
+Benchmark commands also work directly from the repository when Pillow, NumPy, and Plotly are
 installed (plus OpenCV for Hough). Configuration files currently use the JSON subset of YAML.
 
 <details open>
@@ -157,7 +158,7 @@ CoinCounter/
 │   ├── cache.py                  # Cache identity and validation
 │   ├── results.py                # Prediction files and JSON/CSV summaries
 │   ├── metrics.py                # Accuracy, error, timing, and cost
-│   └── reporting.py              # ASCII tables; Plotly plots later
+│   └── reporting.py              # ASCII tables, JSON/CSV, and Plotly comparisons
 ├── configs/
 │   └── benchmark/
 │       ├── default.yaml          # Explicit default engine list
@@ -170,8 +171,8 @@ CoinCounter/
 ├── models/
 │   ├── README.md                 # Weight sources, versions, checksums
 │   └── regression/training.json  # Versioned training log; weights are ignored by Git
-├── results/                      # Generated predictions; ignored by Git
-├── reports/                      # Generated summaries and plots
+├── results/                      # Predictions, summary JSON, and Plotly HTML; ignored by Git
+├── reports/                      # Generated JSON/CSV summaries and tuning results
 ├── examples/
 │   ├── count_image.py
 │   └── count_frames.py
@@ -316,7 +317,7 @@ result pair before skipping inference. A failure or interrupted write is not a v
 </details>
 
 <details open>
-<summary><b>Metrics, ASCII comparison, and future plots</b></summary>
+<summary><b>Metrics, ASCII comparison, and Plotly charts</b></summary>
 
 Compute calculates metrics after inference or cache loading and prints an ASCII table.
 Default ordering is exact-count accuracy descending, then mean inference time ascending.
@@ -349,6 +350,14 @@ Test split: 16 images
 | random_guess   | 16/16  | 6.25%    | 3.938 | 1.533   | 0.024532  | 0      | 0      |
 +----------------+--------+----------+-------+---------+-----------+--------+--------+
 ```
+
+<div align="center">
+
+<img src="results/test_accuracy_vs_time.png" alt="Accuracy vs. processing time scatter chart comparing the four engines on the test split" width="820">
+
+<sub>Accuracy vs. processing time on the test split — an interactive version is saved alongside each benchmark run.</sub>
+</div>
+
 
 Grounding DINO gets **15/16 counts exactly right** with a single coin of total absolute
 error, without any training on this dataset. The regression engine gets **9/16** (7 coins),
@@ -386,10 +395,20 @@ scope so comparisons are reproducible; capture API cost and memory use where ava
 Save JSON and CSV summaries under `reports/` alongside provenance identifying the inputs
 and configurations. Tune on train/validation data and reserve test for final comparisons.
 
-Later, `reporting.py` will use saved summaries for Plotly plots: inference time on the x-axis,
-accuracy on the y-axis, with the Pareto set highlighted. A configuration is nondominated
-when no other configuration is at least as accurate and at least as fast, with a strict
-improvement in one of those metrics. Plotting saved results must not require rerunning engines.
+Every compute run also writes `results/<split>_summary.json` with all table metrics
+(`accuracy` is a fraction from 0 to 1) and `results/<split>_accuracy_vs_time.html`. A test
+run writes `results/test_summary.json` and `results/test_accuracy_vs_time.html`. The command
+prints both paths. Open the HTML in a browser for an offline, interactive Plotly chart:
+processing time (Mean ms) on the x-axis, accuracy as a percentage on the y-axis, and a
+labeled circle per model. Hover over a circle for the table metrics.
+Colored guide lines reach both axes and label each model's exact time and accuracy there.
+
+A line connects the Pareto frontier in increasing time order. A model is nondominated
+when no other model is at least as accurate and at least as fast, with a strict improvement
+in one metric. Only fully scored, error-free runs enter the frontier; partial runs appear
+faded, and models without accuracy or timing data are listed below the plot. `--results`
+changes the output root. See [benchmarking](docs/benchmarking.md) for output details and
+how to plot saved summaries without rerunning engines.
 
 </details>
 
@@ -556,7 +575,7 @@ python3 archive/tools/split_dataset.py --ratios 0.7 0.15 0.15 --seed 42
 - [x] Browse saved predictions and Hough stages in a read-only viewer
 - [x] Evaluate the random-guess baseline on `test`
 - [x] Benchmark random guess, Hough, regression, and Grounding DINO on `test`
-- [ ] Add Plotly comparisons and Pareto-set visualization
+- [x] Add Plotly comparisons and Pareto-set visualization
 - [ ] Publish versioned releases for the separate server repository
 - [ ] Build the Docker server and iPhone app in their own repositories
 
