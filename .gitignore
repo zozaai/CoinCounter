@@ -4,7 +4,8 @@ __pycache__/
 .venv/
 build/
 dist/
-results/
+results/*
+!results/test_accuracy_vs_time.png
 reports/**/summary.csv
 reports/**/summary.json
 models/*
