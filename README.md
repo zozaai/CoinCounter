@@ -26,9 +26,9 @@ The server and iPhone app will live in separate repositories.
 
 The dataset, reusable Python package, and benchmark workflow are implemented with a
 `random_guess` baseline, an OpenCV `hough` engine, a ResNet-18 `regression` engine trained
-on this laptop-sized dataset, and a zero-shot `grounding_dino` open-vocabulary detector.
+on this laptop-sized dataset, a zero-shot `grounding_dino` open-vocabulary detector, and a
+`vision_llm` engine that asks Gemini on the free tier of the Gemini API to count the coins.
 Benchmark runs save JSON metrics and an interactive Plotly accuracy/time comparison.
-The vision-LLM engine remains an explicit placeholder.
 
 ```bash
 pip install -e '.[benchmark,hough,regression,grounding-dino]'
@@ -144,7 +144,7 @@ CoinCounter/
 │       │   ├── hough.py
 │       │   ├── regression.py     # ResNet-18 count regression, output bounded to [0, 20]
 │       │   ├── grounding_dino.py # Zero-shot detector; count = boxes above threshold
-│       │   └── vision_llm.py
+│       │   └── vision_llm.py     # Free-tier Gemini; count parsed from the reply
 │       └── cli/
 │           ├── __init__.py
 │           └── count.py          # Single-image count command
@@ -269,10 +269,11 @@ python -m benchmark.compute --dataset dataset --split test --sort time
 
 `prior.json` contains the `counts`, `weights`, and `seed` object shown in the Python API.
 Benchmark compute derives these frequencies automatically from `dataset/train/labels.json`.
-`random_guess`, `hough`, `regression`, and `grounding_dino` are registered; the first two are
-enabled by default. `regression` is opt-in because it needs trained weights, and
-`grounding_dino` because it downloads a 660 MB checkpoint from Hugging Face on first use. Multiple implemented engines can be supplied after `--engine`; requesting a
-placeholder produces a visible error.
+`random_guess`, `hough`, `regression`, `grounding_dino`, and `vision_llm` are registered; the
+first two are enabled by default. `regression` is opt-in because it needs trained weights,
+`grounding_dino` because it downloads a 660 MB checkpoint from Hugging Face on first use, and
+`vision_llm` because it needs a `GEMINI_API_KEY` and a network connection. Multiple
+engines can be supplied after `--engine`; an unknown name produces a visible error.
 
 Run only Hough with `python -m benchmark.compute --dataset dataset --split test --engine hough`.
 For the installed CLI, use `coincounter count image.jpg --engine hough --parameters configs/benchmark/hough.yaml`.
@@ -335,25 +336,27 @@ used only as an identity, not as visual evidence, and test labels never determin
 Confidence is unavailable (`None`). These are one-seed baseline measurements, not an
 estimate averaged over many random seeds.
 
-Command: `python -m benchmark.compute --dataset dataset --split test --force --engine grounding_dino regression hough random_guess --reports reports/grounding-dino-v1`
-(Apple M4, macOS 26.5, Python 3.14.0, PyTorch 2.14.0 on MPS, transformers 5.17.0, OpenCV 4.14.0)
+Command: `python -m benchmark.compute --dataset dataset --split test --engine vision_llm grounding_dino regression hough random_guess --reports reports/vision-llm-v1`
+(Apple M4, macOS 26.5, Python 3.14.0, PyTorch 2.14.0 on MPS, transformers 5.17.0, OpenCV 4.14.0;
+`vision_llm` is `gemini-3.8-flash` on the Gemini API free tier, queried 2026-09-27)
 
 ```text
 Test split: 16 images
 
-+----------------+--------+----------+-------+---------+-----------+--------+--------+
-| Engine         | Scored | Accuracy | MAE   | Mean ms | Total sec | Cached | Failed |
-+----------------+--------+----------+-------+---------+-----------+--------+--------+
-| grounding_dino | 16/16  | 93.75%   | 0.062 | 576.890 | 9.230239  | 0      | 0      |
-| regression     | 16/16  | 56.25%   | 0.438 | 9.770   | 0.156321  | 0      | 0      |
-| hough          | 16/16  | 18.75%   | 4.312 | 2.421   | 0.038734  | 0      | 0      |
-| random_guess   | 16/16  | 6.25%    | 3.938 | 1.533   | 0.024532  | 0      | 0      |
-+----------------+--------+----------+-------+---------+-----------+--------+--------+
++----------------+--------+----------+-------+----------+------------+--------+--------+
+| Engine         | Scored | Accuracy | MAE   | Mean ms  | Total sec  | Cached | Failed |
++----------------+--------+----------+-------+----------+------------+--------+--------+
+| grounding_dino | 16/16  | 93.75%   | 0.062 | 576.826  | 9.229214   | 0      | 0      |
+| vision_llm     | 16/16  | 93.75%   | 0.062 | 8010.627 | 128.170027 | 16     | 0      |
+| regression     | 16/16  | 56.25%   | 0.438 | 9.649    | 0.154389   | 0      | 0      |
+| hough          | 16/16  | 18.75%   | 4.312 | 3.162    | 0.050596   | 0      | 0      |
+| random_guess   | 16/16  | 6.25%    | 3.938 | 1.542    | 0.024668   | 0      | 0      |
++----------------+--------+----------+-------+----------+------------+--------+--------+
 ```
 
 <div align="center">
 
-<img src="results/test_accuracy_vs_time.png" alt="Accuracy vs. processing time scatter chart comparing the four engines on the test split" width="820">
+<img src="results/test_accuracy_vs_time.png" alt="Accuracy vs. processing time scatter chart comparing the five engines on the test split" width="820">
 
 <sub>Accuracy vs. processing time on the test split — an interactive version is saved alongside each benchmark run.</sub>
 </div>
@@ -366,20 +369,28 @@ accuracy-versus-cost trade: Grounding DINO is about 60× slower than regression,
 than Hough, and needs 5.9 s of model loading plus a 660 MB download. Timings include image
 decoding and depend on the environment; they are not isolated algorithm timings.
 
+The Gemini `vision_llm` engine ties Grounding DINO at **15/16** (one coin of total error) with
+no download or local accelerator, but at ~8 s per image it is ~14× slower, so it is dominated
+and sits off the Pareto frontier. Its time is network round trips, model thinking, and retries
+on busy-model 503s, not local compute; its 16 predictions were served from the cache of the
+first Gemini run, so the recorded timings are that run's measurements.
+
 The command generates local JSON/CSV summaries under `reports/grounding-dino-v1/<dataset-id>/test/`.
 Generated summaries and per-image count files under `results/` are ignored by Git.
 The Hough [tuning results](reports/hough-v1/tuning.json) and the regression
 [training log](models/regression/training.json) remain versioned.
 
-| Split | grounding_dino | regression | hough | random_guess |
-|:--|--:|--:|--:|--:|
-| `test` (16, held out) | **93.75% / 0.062** | 56.25% / 0.438 | 18.75% / 4.312 | 6.25% / 3.938 |
-| `val` (19, used for selection) | 94.74% / 0.053 | 78.95% / 0.211 | 26.32% / 3.526 | 15.79% / 3.158 |
-| all 117 (includes train) | 96.58% / 0.034 | 81.20% / 0.188 | 17.09% / 4.043 | 9.40% / 3.650 |
+| Split | grounding_dino | vision_llm | regression | hough | random_guess |
+|:--|--:|--:|--:|--:|--:|
+| `test` (16, held out) | **93.75% / 0.062** | **93.75% / 0.062** | 56.25% / 0.438 | 18.75% / 4.312 | 6.25% / 3.938 |
+| `val` (19, used for selection) | 94.74% / 0.053 | — | 78.95% / 0.211 | 26.32% / 3.526 | 15.79% / 3.158 |
+| all 117 (includes train) | 96.58% / 0.034 | — | 81.20% / 0.188 | 17.09% / 4.043 | 9.40% / 3.650 |
 
 Cells are exact accuracy / MAE. Only the `test` row is a held-out score. Regression was
 trained on `train` and its checkpoint chosen on `val`; the Grounding DINO threshold was
 chosen on `train` + `val`; Hough parameters were tuned on `train` and selected on `val`.
+`vision_llm` uses a fixed prompt with nothing tuned, and was run on `test` only to stay within
+the free-tier daily quota.
 
 - **Accuracy:** Percentage of scored images whose predicted count exactly matches the label.
 - **MAE:** Mean absolute count error; lower is better.
@@ -518,11 +529,54 @@ exactly 0.40, right at the threshold.
 </details>
 
 <details open>
+<summary><b>Vision LLM engine (free API)</b></summary>
+
+`vision_llm` sends each photo to one vision LLM, Google's `gemini-3.8-flash`, on the free tier
+of the [Gemini API](https://ai.google.dev/gemini-api/docs) through its OpenAI-compatible
+endpoint, asks for `{"count": <integer>}`, and parses the reply. It needs no extra packages (the
+request uses the standard library) and no training. Create a free key at
+<https://aistudio.google.com/apikey> and export it; the key is read from the environment only
+and never enters configs or results.
+
+```bash
+export GEMINI_API_KEY=...
+python -m benchmark.compute --dataset dataset --split test --engine vision_llm grounding_dino regression hough random_guess
+```
+
+```python
+from coincounter import CoinCounter
+
+with CoinCounter("vision_llm") as counter:
+    result = counter.run("dataset/images/IMG_4315.jpg")
+    print(result.count, result.metadata["reply"])
+```
+
+| Parameter | Default | Note |
+|---|---|---|
+| `model` | `gemini-3.8-flash` | A Gemini API model id |
+| `prompt` | Count every coin once; reply `{"count": n}` | Sent with the image |
+| `max_image_side` | `1024` | Longer side is downscaled before JPEG encoding |
+| `timeout` | `120` | Seconds per request |
+| `max_retries` | `5` | Retries on HTTP 429/5xx (busy models return 503) and network errors, honouring `Retry-After` |
+
+Replies are read as JSON first, then as a single integer in plain text; anything else raises
+`InferenceError` and is reported as a failed image. Confidence is `None`; `metadata` holds the
+raw reply, the resolved model, and token usage. Known limitations: timing includes network
+latency, model thinking time, and retries when the model is busy; the free tier has per-minute
+and daily quotas and may use prompts and images to improve Google products; and hosted models
+cannot be pinned to a weights revision, so a benchmark row reflects the model as served on the
+day it ran. On `test` it matches Grounding DINO (15/16) at ~8 s per image; the one miss counts
+6 coins on `IMG_4352.jpg` (label 5). Cached predictions keep the original
+replies; rerun with `--force` to query again.
+
+</details>
+
+<details open>
 <summary><b>Integration with the separate server repository (planned)</b></summary>
 
 - Publish a versioned Python package; the server pins its dependency to a release.
 - Provide optional engine dependencies such as `coincounter[hough]`,
-  `coincounter[regression]`, `coincounter[grounding-dino]`, and `coincounter[vision-llm]`,
+  `coincounter[regression]`, and `coincounter[grounding-dino]`,
   with lazy engine imports.
 - Accept explicit model paths and device settings. Avoid unexpected model downloads
   during the first inference request.
@@ -569,12 +623,13 @@ python3 archive/tools/split_dataset.py --ratios 0.7 0.15 0.15 --seed 42
 - [x] Implement and evaluate the Hough engine
 - [x] Implement and evaluate the regression engine
 - [x] Implement and evaluate the Grounding DINO zero-shot detector
-- [ ] Implement the vision-LLM engine
+- [x] Implement the free-API vision-LLM engine
+- [x] Evaluate the vision-LLM engine on `test`
 - [x] Add compute with default engines, caching, and `--force`
 - [x] Print ASCII accuracy/time comparisons and save JSON/CSV summaries
 - [x] Browse saved predictions and Hough stages in a read-only viewer
 - [x] Evaluate the random-guess baseline on `test`
-- [x] Benchmark random guess, Hough, regression, and Grounding DINO on `test`
+- [x] Benchmark random guess, Hough, regression, Grounding DINO, and the vision LLM on `test`
 - [x] Add Plotly comparisons and Pareto-set visualization
 - [ ] Publish versioned releases for the separate server repository
 - [ ] Build the Docker server and iPhone app in their own repositories

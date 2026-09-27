@@ -29,6 +29,13 @@ first use and reuses the Hugging Face cache afterwards. Parameters: `model`, `pr
 are `{x1, y1, x2, y2, score}` in input pixels. Confidence is `None`. Loading failures raise
 `ModelLoadingError`; missing transformers raises `UnavailableEngineError`.
 
+No extra is needed for `vision_llm`; set `GEMINI_API_KEY` to a free key from
+<https://aistudio.google.com/apikey>. `CoinCounter("vision_llm")` sends each image to
+`gemini-3.8-flash` on the Gemini API free tier and parses `{"count": n}` from the reply. Parameters: `model`,
+`prompt`, `max_image_side=1024`, `timeout=120`, `max_retries=5`. Confidence is `None`;
+`metadata` contains `reply`, `resolved_model`, `usage`, and `sent_size`. A missing
+key raises `UnavailableEngineError`; HTTP, network, and unreadable replies raise `InferenceError`.
+
 `run` accepts image paths, PIL images, or uint8 RGB arrays. `close` is idempotent;
 context-manager cleanup is supported. Results contain count, optional confidence,
 optional detections, and metadata. A closed counter rejects inference.
