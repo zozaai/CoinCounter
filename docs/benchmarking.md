@@ -96,6 +96,20 @@ comparison with `python -m benchmark.compute --dataset dataset --split test --fo
 grounding_dino regression hough random_guess --reports reports/grounding-dino-v1`.
 Set `COINCOUNTER_TEST_GROUNDING_DINO=1` to include the real-model unit test.
 
+## Vision LLM
+
+`vision_llm` queries `gemini-3.8-flash` on the Gemini API free tier with the fixed prompt in
+`vision_llm.py` at temperature 0; nothing is tuned, so no split is read except for scoring.
+Export `GEMINI_API_KEY` before running. The manifest records the API endpoint and requested
+model, and each prediction keeps the raw reply and the model the API reports. Timing includes
+network latency, model thinking, and retries. The free tier is rate limited, so run one split at
+a time; 429 and busy-model 503 responses are retried, honouring `Retry-After`. Any source change
+alters the cache identity, so rerunning after an edit queries the API again. On `test` it scored
+15/16 (MAE 0.062) at ~8.0 s per image. Run the comparison with
+`python -m benchmark.compute --dataset dataset --split test --force --engine vision_llm
+grounding_dino regression hough random_guess --reports reports/vision-llm-v1`.
+Set `COINCOUNTER_TEST_VISION_LLM=1` (with the key) to include the real-API unit test.
+
 ## Viewing saved predictions
 
 `python -m benchmark.vis --dataset dataset --split test --engine hough` serves a local page

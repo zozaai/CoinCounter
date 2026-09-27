@@ -13,6 +13,6 @@ class CounterTests(unittest.TestCase):
         with self.assertRaises(InferenceError):
             counter.run(None)
 
-    def test_unimplemented_engine(self):
+    def test_unknown_engine(self):
         with self.assertRaises(UnavailableEngineError):
-            CoinCounter("vision_llm")
+            CoinCounter("not_an_engine")

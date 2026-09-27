@@ -86,6 +86,9 @@ def main(argv=None):
                                                     revision=parameters.get("revision"))
                 manifest["model_revision"] = getattr(config, "_commit_hash", None)
                 manifest["transformers"] = transformers.__version__
+            if name == "vision_llm":
+                from coincounter.engines.vision_llm import API_URL, DEFAULT_MODEL
+                manifest["api"] = {"url": API_URL, "model": parameters.get("model", DEFAULT_MODEL)}
             if name == "hough":
                 from coincounter.exceptions import UnavailableEngineError
                 try:
