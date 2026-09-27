@@ -50,8 +50,10 @@ def accuracy_time_figure(summary):
     frontier = pareto_front(rows)
     figure = go.Figure()
     colors = qualitative.Dark24
-    x_max = max((r["mean_ms"] for r in plotted), default=1)
-    x_max = x_max * 1.12 if x_max else 1
+    # Times span ~1 ms to several seconds, so a log axis keeps every engine readable;
+    # the range is in log10 units with half a decade of padding on each side.
+    times = [r["mean_ms"] for r in plotted if r["mean_ms"] > 0]
+    x_range = [math.log10(min(times)) - 0.5, math.log10(max(times)) + 0.5] if times else [-1, 1]
 
     if frontier:
         # Models with identical metrics share a vertex, but retain their circles.
@@ -82,7 +84,7 @@ def accuracy_time_figure(summary):
     figure.update_layout(
         title=f"Accuracy vs. processing time — {escape(summary['split'])}",
         template="plotly_white",
-        xaxis={"title": "Processing time (Mean ms)", "range": [0, x_max],
+        xaxis={"title": "Processing time (Mean ms, log scale)", "type": "log", "range": x_range,
                "ticklen": 5, "tickcolor": "#64748b"},
         yaxis={"title": "Accuracy", "range": [-0.04, 1.08], "tickformat": ".0%",
                "ticklen": 5, "tickcolor": "#64748b"},

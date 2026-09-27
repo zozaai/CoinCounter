@@ -19,7 +19,7 @@ Incomplete results sort after completed results and include errors. Each run sav
   `expected`, `accuracy` (a fraction from 0 to 1), `mae`, `mean_ms`, `total_seconds`,
   `cached`, and `failed`, plus errors, loading time, and run provenance.
 - `results/<split>_accuracy_vs_time.html`: an interactive Plotly chart with
-  processing time (Mean ms) on the x-axis, accuracy displayed as a percentage on the
+  processing time (Mean ms) on a log-scale x-axis, accuracy displayed as a percentage on the
   y-axis, and a labeled circle for each model. Hover for the table metrics. A line joins
   Pareto-optimal models in increasing time order: no other eligible model is at least
   as fast and as accurate with a strict improvement in one metric. Colored guide lines

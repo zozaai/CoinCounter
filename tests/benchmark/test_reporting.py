@@ -49,7 +49,10 @@ class ReportingTests(unittest.TestCase):
             self.assertEqual(list(model.x), [expected["mean_ms"]])
             self.assertEqual(list(model.y), [expected["accuracy"]])
         self.assertIn("partial", models[-1].name)
-        self.assertEqual(figure.layout.xaxis.title.text, "Processing time (Mean ms)")
+        self.assertEqual(figure.layout.xaxis.title.text, "Processing time (Mean ms, log scale)")
+        self.assertEqual(figure.layout.xaxis.type, "log")
+        low, high = figure.layout.xaxis.range
+        self.assertTrue(10 ** low < min(r["mean_ms"] for r in rows if r["mean_ms"]) and 10 ** high > 20)
         self.assertEqual(figure.layout.yaxis.title.text, "Accuracy")
         self.assertEqual(figure.layout.yaxis.tickformat, ".0%")
         self.assertIn("failed", figure.layout.annotations[0].text)
