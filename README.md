@@ -12,7 +12,7 @@ The server and iPhone app will live in separate repositories.
 <a href="LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/License-Apache_2.0-2a78d6?style=flat-square"></a>
 <img alt="Python 3.9+" src="https://img.shields.io/badge/Python-3.9+-2a78d6?style=flat-square&logo=python&logoColor=white">
 <a href="#dataset"><img alt="117 labeled images" src="https://img.shields.io/badge/Dataset-117_labeled_images-1baf7a?style=flat-square"></a>
-<a href="#roadmap"><img alt="Status: Grounding DINO 94% on test" src="https://img.shields.io/badge/Status-Grounding_DINO_94%25_test_accuracy-1baf7a?style=flat-square"></a>
+<a href="#roadmap"><img alt="Status: Grounding DINO and Gemini 94% on test" src="https://img.shields.io/badge/Status-Grounding_DINO_%26_Gemini_94%25_test_accuracy-1baf7a?style=flat-square"></a>
 
 <br>
 
@@ -33,7 +33,8 @@ Benchmark runs save JSON metrics and an interactive Plotly accuracy/time compari
 ```bash
 pip install -e '.[benchmark,hough,regression,grounding-dino]'
 python -m benchmark.train_regression --dataset dataset --out models/regression   # ~90 s on an M4
-python -m benchmark.compute --dataset dataset --split test --engine grounding_dino regression hough random_guess
+export GEMINI_API_KEY=...   # free key from https://aistudio.google.com/apikey, for vision_llm
+python -m benchmark.compute --dataset dataset --split test --engine vision_llm grounding_dino regression hough random_guess
 ```
 
 Benchmark commands also work directly from the repository when Pillow, NumPy, and Plotly are
@@ -63,7 +64,7 @@ flowchart LR
 | **Classical CV** | Hough circles / blob detection | Fast and free — brittle to lighting and overlap |
 | **Deep regression** | CNN trained to predict a count | Accurate in-domain — needs training data |
 | **Open-vocabulary detection** | Grounding DINO prompted with "coin." | No training, boxes for free — 660 MB model, ~0.5 s per image |
-| **Vision LLM** | Ask a multimodal model directly | No training — higher latency and cost per call |
+| **Vision LLM** | Ask Gemini (free API tier) directly | No training or download — ~8 s per image, rate limited, needs network |
 
 The point of the project is the comparison: same images, same metric, four very different
 cost and accuracy profiles.
